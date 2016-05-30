@@ -41,7 +41,8 @@
     add_record_fields/4,
     retrieve_n_break/2,
     str_to_term/1,
-    cmd/1
+    cmd/1,
+    connect_node/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -565,6 +566,23 @@ cmd_receive(OutputNode) ->
             cmd_receive(OutputNode);
         {OutputNode, {exit_status, 0}} ->
             io:format("~n")
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Connect node
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec connect_node(node()) -> boolean().
+connect_node(NodeAddr) ->
+    case lists:member(NodeAddr, erlang:nodes()) of
+        true ->
+            true;
+        false ->
+            Result = net_kernel:connect_node('sb@starbound.local'),
+            timer:sleep(250),
+            Result
     end.
 
 %%%===================================================================
