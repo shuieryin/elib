@@ -580,7 +580,7 @@ connect_node(NodeAddr) ->
         true ->
             true;
         false ->
-            Result = net_kernel:connect_node('sb@starbound.local'),
+            Result = net_kernel:connect_node(NodeAddr),
             timer:sleep(250),
             Result
     end.
