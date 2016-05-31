@@ -42,7 +42,8 @@
     retrieve_n_break/2,
     str_to_term/1,
     cmd/1,
-    connect_node/1
+    connect_node/1,
+    cmd/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -583,6 +584,36 @@ connect_node(NodeAddr) ->
             Result = net_kernel:connect_node(NodeAddr),
             timer:sleep(250),
             Result
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Execute command and print output in realtime.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec cmd(string(), function()) -> ok.
+cmd(CmdStr, Func) ->
+    OutputNode = erlang:open_port({spawn, CmdStr},
+        [stderr_to_stdout, in, exit_status,
+            binary, stream, {line, 255}]),
+
+    cmd_receive(OutputNode, Func).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Receive func for cmd/1.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec cmd_receive(port(), function()) -> ok.
+cmd_receive(OutputNode, Func) ->
+    receive
+        {OutputNode, {data, {eol, OutputBin}}} ->
+            Func(OutputBin),
+            cmd_receive(OutputNode, Func);
+        {OutputNode, {exit_status, 0}} ->
+            io:format("~n")
     end.
 
 %%%===================================================================
