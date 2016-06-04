@@ -43,7 +43,8 @@
     str_to_term/1,
     cmd/1,
     connect_node/1,
-    cmd/2
+    cmd/2,
+    ipv6_2_ipv4/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -614,6 +615,22 @@ cmd_receive(OutputNode, Func) ->
             cmd_receive(OutputNode, Func);
         {OutputNode, {exit_status, 0}} ->
             io:format("~n")
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% convert ipv6 to ipv4.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec ipv6_2_ipv4(Ipv6Bin :: binary()) -> {ok, inet:ip4_address()} | {error, not_ipv6_addr}.
+ipv6_2_ipv4(Ipv6Bin) ->
+    case re:run(Ipv6Bin, <<"^0000:0000:0000:0000:0000:ffff:(\\S{4}):(\\S{4})$">>, [{capture, all_but_first, binary}]) of
+        {match, [V6_7, V6_8]} ->
+            Ip = binary_to_integer(<<V6_7/binary, V6_8/binary>>, 16),
+            {ok, {Ip bsr 24, (Ip band 16711680) bsr 16, (Ip band 65280) bsr 8, Ip band 255}};
+        _Else ->
+            {error, not_ipv6_addr}
     end.
 
 %%%===================================================================
