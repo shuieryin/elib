@@ -629,7 +629,7 @@ ipv6_2_ipv4(Ipv6Bin) ->
         {match, [V6_7, V6_8]} ->
             Ip = binary_to_integer(<<V6_7/binary, V6_8/binary>>, 16),
             {V4_1, V4_2, V4_3, V4_4} = Ipv4Addr = {Ip bsr 24, (Ip band 16711680) bsr 16, (Ip band 65280) bsr 8, Ip band 255},
-            {ok, Ipv4Addr, <<V4_1/binary, ".", V4_2/binary, ".", V4_3/binary, ".", V4_4/binary>>};
+            {ok, Ipv4Addr, <<V4_1/integer, ".", V4_2/integer, ".", V4_3/integer, ".", V4_4/integer>>};
         _Else ->
             {error, not_ipv6_addr}
     end.
