@@ -623,13 +623,12 @@ cmd_receive(OutputNode, Func) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec ipv6_2_ipv4(Ipv6Bin :: binary()) -> {ok, inet:ip4_address(), Ipv4Bin :: binary()} | {error, not_ipv6_addr}.
+-spec ipv6_2_ipv4(Ipv6Bin :: binary()) -> {ok, inet:ip4_address()} | {error, not_ipv6_addr}.
 ipv6_2_ipv4(Ipv6Bin) ->
     case re:run(Ipv6Bin, <<"^0000:0000:0000:0000:0000:ffff:(\\S{4}):(\\S{4})$">>, [{capture, all_but_first, binary}]) of
         {match, [V6_7, V6_8]} ->
             Ip = binary_to_integer(<<V6_7/binary, V6_8/binary>>, 16),
-            {V4_1, V4_2, V4_3, V4_4} = Ipv4Addr = {Ip bsr 24, (Ip band 16711680) bsr 16, (Ip band 65280) bsr 8, Ip band 255},
-            {ok, Ipv4Addr, <<V4_1/integer, "."/utf8, V4_2/integer, "."/utf8, V4_3/integer, "."/utf8, V4_4/integer>>};
+            {ok, {Ip bsr 24, (Ip band 16711680) bsr 16, (Ip band 65280) bsr 8, Ip band 255}};
         _Else ->
             {error, not_ipv6_addr}
     end.
