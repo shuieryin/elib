@@ -44,7 +44,9 @@
     cmd/1,
     connect_node/1,
     cmd/2,
-    ipv6_2_ipv4/1
+    ipv6_2_ipv4/1,
+    hexstr_to_bin/1,
+    bin_to_hexstr/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -632,6 +634,32 @@ ipv6_2_ipv4(Ipv6Bin) ->
         _Else ->
             {error, not_ipv6_addr}
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% convert binary to hex string
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec bin_to_hexstr(binary()) -> string().
+bin_to_hexstr(Bin) ->
+    lists:flatten([io_lib:format("~2.16.0B", [X]) ||
+        X <- binary_to_list(Bin)]).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% convert hex string to binary
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec hexstr_to_bin(string()) -> binary().
+hexstr_to_bin(S) ->
+    hexstr_to_bin(S, []).
+hexstr_to_bin([], Acc) ->
+    list_to_binary(lists:reverse(Acc));
+hexstr_to_bin([X, Y | T], Acc) ->
+    {ok, [V], []} = io_lib:fread("~16u", [X, Y]),
+    hexstr_to_bin(T, [V | Acc]).
 
 %%%===================================================================
 %%% Internal functions
