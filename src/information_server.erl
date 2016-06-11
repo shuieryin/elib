@@ -15,13 +15,13 @@
 
 %% API
 -export([
+    start_link/2,
+    start/2,
     start_link/1,
     start/1,
-    start_link/0,
-    start/0,
     stop/0,
-    module_sequence/0,
-    stop_server/0
+    module_sequence/1,
+    stop_server/1
 ]).
 
 %% gen_server callbacks
@@ -41,6 +41,7 @@
 
 -record(state, {
     root_sup_name :: module(),
+    info_server_name :: atom(),
     stop_server_method = {init, stop, []} :: stop_server_method()
 }).
 
@@ -58,9 +59,9 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec module_sequence() -> [module()].
-module_sequence() ->
-    gen_server:call({global, ?MODULE}, module_sequence).
+-spec module_sequence(atom()) -> [module()].
+module_sequence(InfoServerName) ->
+    gen_server:call({global, InfoServerName}, module_sequence).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -68,9 +69,9 @@ module_sequence() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec stop_server() -> no_return().
-stop_server() ->
-    gen_server:cast({global, ?MODULE}, stop_server).
+-spec stop_server(atom()) -> no_return().
+stop_server(InfoServerName) ->
+    gen_server:cast({global, InfoServerName}, stop_server).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -78,9 +79,9 @@ stop_server() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start_link(stop_server_method()) -> gen:start_ret().
-start_link(StopServerMethod) ->
-    gen_server:start_link({global, ?SERVER}, ?MODULE, StopServerMethod, []).
+-spec start_link(stop_server_method(), atom()) -> gen:start_ret().
+start_link(StopServerMethod, InfoServerName) ->
+    gen_server:start_link({global, InfoServerName}, ?MODULE, {StopServerMethod, InfoServerName}, []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -88,9 +89,9 @@ start_link(StopServerMethod) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start(stop_server_method()) -> gen:start_ret().
-start(StopServerMethod) ->
-    gen_server:start({global, ?SERVER}, ?MODULE, StopServerMethod, []).
+-spec start(stop_server_method(), atom()) -> gen:start_ret().
+start(StopServerMethod, InfoServerName) ->
+    gen_server:start({global, InfoServerName}, ?MODULE, {StopServerMethod, InfoServerName}, []).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -98,9 +99,9 @@ start(StopServerMethod) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start_link() -> gen:start_ret().
-start_link() ->
-    start_link({init, stop, []}).
+-spec start_link(atom()) -> gen:start_ret().
+start_link(InfoServerName) ->
+    start_link({init, stop, []}, InfoServerName).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -108,9 +109,9 @@ start_link() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start() -> gen:start_ret().
-start() ->
-    start({init, stop, []}).
+-spec start(atom()) -> gen:start_ret().
+start(InfoServerName) ->
+    start({init, stop, []}, InfoServerName).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -137,7 +138,7 @@ stop() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
--spec init(Args) ->
+-spec init({StopServerMethod :: tuple(), InfoServerName :: atom()}) ->
     {ok, State} |
     {ok, State, timeout() | hibernate} |
     {stop, Reason} |
@@ -146,7 +147,7 @@ stop() ->
     Args :: term(),
     State :: #state{},
     Reason :: term(). % generic term
-init(StopServerMethod) ->
+init({StopServerMethod, InfoServerName}) ->
     io:format("~p starting...", [?MODULE]),
 
     AppNameStr = begin
@@ -160,6 +161,7 @@ init(StopServerMethod) ->
 
     {ok, #state{
         root_sup_name = RootSupName,
+        info_server_name = InfoServerName,
         stop_server_method = StopServerMethod
     }}.
 
