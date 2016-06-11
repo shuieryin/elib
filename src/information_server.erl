@@ -144,7 +144,6 @@ stop() ->
     {stop, Reason} |
     ignore when
 
-    Args :: term(),
     State :: #state{},
     Reason :: term(). % generic term
 init({StopServerMethod, InfoServerName}) ->
