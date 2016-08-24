@@ -206,7 +206,7 @@ random_from_list([]) ->
     undefined;
 random_from_list(SrcList) ->
     ListSize = length(SrcList),
-    RandomPos = random:uniform(ListSize),
+    RandomPos = rand:uniform(ListSize),
     lists:nth(RandomPos, SrcList).
 
 %%--------------------------------------------------------------------
@@ -283,7 +283,7 @@ rr(Start, End) ->
                 Start > End ->
                     Start;
                 true ->
-                    Start + random:uniform(End - Start)
+                    Start + rand:uniform(End - Start)
             end,
     Value / 100.
 
@@ -291,7 +291,7 @@ rr(Start, End) ->
 %% @doc
 %% TargetArgs is converted from
 %%        binary "little boy 2" to "TargetId=little_boy" and "Sequence=2".
-%%        binary "shuieryin" to "TargetId=collin" and "Sequence=1".
+%%        binary "shuieryin" to "TargetId=shuieryin" and "Sequence=1".
 %%
 %% @end
 %%--------------------------------------------------------------------
@@ -323,7 +323,7 @@ parse_target_id(TargetArgs) ->
 %%--------------------------------------------------------------------
 -spec rb() -> boolean().
 rb() ->
-    random:uniform() > 0.499.
+    rand:uniform() > 0.499.
 
 %%--------------------------------------------------------------------
 %% @doc
