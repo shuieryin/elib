@@ -5,3 +5,6 @@ install_rebar3:
 
 install:
 	@./config/rebar3 ck
+
+reset:
+	@./config/rebar3 reset
