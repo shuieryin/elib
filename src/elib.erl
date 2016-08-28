@@ -46,7 +46,8 @@
     cmd/2,
     ipv6_2_ipv4/1,
     hexstr_to_bin/1,
-    bin_to_hexstr/1
+    bin_to_hexstr/1,
+    for_each_line_in_file/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -661,6 +662,22 @@ hexstr_to_bin([X, Y | T], Acc) ->
     {ok, [V], []} = io_lib:fread("~16u", [X, Y]),
     hexstr_to_bin(T, [V | Acc]).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% traverse file line by line and pass and execute it in given function.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec for_each_line_in_file(FilePath, Func) -> ok when
+    FilePath :: file:filename_all(),
+    Func :: function().
+for_each_line_in_file(FilePath, Func) ->
+    {ok, Device} = file:open(FilePath, [read]),
+    try read_line_and_exec(Device, Func)
+    after file:close(Device)
+    end,
+    ok.
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -812,3 +829,21 @@ do_add_record_fields(_OldRecordFieldNames, _NewRecordFieldNames, RestDataList, [
     lists:reverse(UpdatedDataList) ++ RestDataList;
 do_add_record_fields([], _NewRecordFieldNames, [], _NewValueBingdings, UpdatedDataList) ->
     lists:reverse(UpdatedDataList).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @see traverse_file_by_line/2
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec read_line_and_exec(Device, Func) -> [] when
+    Device :: file:io_device(),
+    Func :: function().
+read_line_and_exec(Device, Func) ->
+    case io:get_line(Device, "") of
+        eof ->
+            [];
+        RawLine ->
+            Func(re:replace(RawLine, <<"\n">>, <<>>, [{return, binary}])),
+            read_line_and_exec(Device, Func)
+    end.
