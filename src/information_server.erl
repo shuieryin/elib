@@ -166,10 +166,10 @@ init({StopServerMethod, InfoServerName}) ->
 
     case whereis(wechat_mud_SUITE) of
         undefined ->
-            io:format("no TestProcess:~n"),
+            % io:format("no TestProcess:~n"),
             ok;
         TestProcess ->
-            io:format("TestProcess:~p~n", [TestProcess]),
+            % io:format("TestProcess:~p~n", [TestProcess]),
             TestProcess ! {TestProcess, wechat_started}
     end,
 
