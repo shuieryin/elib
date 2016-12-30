@@ -156,13 +156,24 @@ init({StopServerMethod, InfoServerName}) ->
 
     RootSupName = list_to_atom(AppNameStr ++ "_sup"),
 
-    io:format("started~n"),
-
-    {ok, #state{
+    State = #state{
         root_sup_name = RootSupName,
         info_server_name = InfoServerName,
         stop_server_method = StopServerMethod
-    }}.
+    },
+
+    io:format("started~n"),
+
+    case whereis(wechat_mud_SUITE) of
+        undefined ->
+            io:format("no TestProcess:~n"),
+            ok;
+        TestProcess ->
+            io:format("TestProcess:~p~n", [TestProcess]),
+            TestProcess ! {TestProcess, wechat_started}
+    end,
+
+    {ok, State}.
 
 %%--------------------------------------------------------------------
 %% @private
