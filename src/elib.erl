@@ -718,13 +718,13 @@ total_weighing(WeighingList) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec rand_by_weigh([WeighingObject], TotalWeighing) -> ReturnWeighingObject when
+-spec rand_by_weigh(TotalWeighing, [WeighingObject]) -> ReturnWeighingObject when
     WeighingObject :: {Weighing, Target},
     TotalWeighing :: pos_integer(),
     Target :: term(),
     Weighing :: non_neg_integer(),
     ReturnWeighingObject :: WeighingObject.
-rand_by_weigh(WeighingList, TotalWeighing) ->
+rand_by_weigh(TotalWeighing, WeighingList) ->
     Seed = rand:uniform(TotalWeighing),
     {LeftWeighing, Target} = lists:foldl(
         fun({Weighing, CurTarget}, {AccWeighing, AccTarget}) ->
