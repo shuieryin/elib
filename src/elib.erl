@@ -47,7 +47,10 @@
     ipv6_2_ipv4/1,
     hexstr_to_bin/1,
     bin_to_hexstr/1,
-    for_each_line_in_file/2
+    for_each_line_in_file/2,
+    total_weighing/1,
+    rand_by_weigh/1,
+    rand_by_weigh/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -677,6 +680,68 @@ for_each_line_in_file(FilePath, Func) ->
     after file:close(Device)
     end,
     ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Random pick a target by weighing.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec rand_by_weigh([WeighingObject]) -> ReturnWeighingObject when
+    WeighingObject :: {Target, Weighing},
+    Target :: term(),
+    Weighing :: non_neg_integer(),
+    ReturnWeighingObject :: WeighingObject.
+rand_by_weigh(WeighingList) ->
+    rand_by_weigh(WeighingList, total_weighing(WeighingList)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Calculate total weighing.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec total_weighing([WeighingObject]) -> TotalWeighing when
+    WeighingObject :: {Target, Weighing},
+    Target :: term(),
+    Weighing :: non_neg_integer(),
+    TotalWeighing :: pos_integer().
+total_weighing(WeighingList) ->
+    lists:foldl(
+        fun({_Target, Weighing}, AccWeighing) ->
+            AccWeighing + Weighing
+        end, 0, WeighingList).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Random pick a target by weighing. Given total weighing.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec rand_by_weigh([WeighingObject], TotalWeighing) -> ReturnWeighingObject when
+    WeighingObject :: {Target, Weighing},
+    TotalWeighing :: pos_integer(),
+    Target :: term(),
+    Weighing :: non_neg_integer(),
+    ReturnWeighingObject :: WeighingObject.
+rand_by_weigh(WeighingList, TotalWeighing) ->
+    Seed = rand:uniform(TotalWeighing),
+    {LeftWeighing, Target} = lists:foldl(
+        fun({CurFunc, Weighing}, {AccWeighing, AccFunc}) ->
+            case AccFunc of
+                undefined ->
+                    UpdatedAccWeighing = AccWeighing + Weighing,
+                    if
+                        Seed =< UpdatedAccWeighing ->
+                            {UpdatedAccWeighing, CurFunc};
+                        true ->
+                            {UpdatedAccWeighing, AccFunc}
+                    end;
+                _Selected ->
+                    {AccWeighing, AccFunc}
+            end
+        end, {0, undefined}, WeighingList),
+    {LeftWeighing, Target}.
 
 %%%===================================================================
 %%% Internal functions
