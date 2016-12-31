@@ -688,7 +688,7 @@ for_each_line_in_file(FilePath, Func) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec rand_by_weigh([WeighingObject]) -> ReturnWeighingObject when
-    WeighingObject :: {Target, Weighing},
+    WeighingObject :: {Weighing, Target},
     Target :: term(),
     Weighing :: non_neg_integer(),
     ReturnWeighingObject :: WeighingObject.
@@ -702,13 +702,13 @@ rand_by_weigh(WeighingList) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec total_weighing([WeighingObject]) -> TotalWeighing when
-    WeighingObject :: {Target, Weighing},
+    WeighingObject :: {Weighing, Target},
     Target :: term(),
     Weighing :: non_neg_integer(),
     TotalWeighing :: pos_integer().
 total_weighing(WeighingList) ->
     lists:foldl(
-        fun({_Target, Weighing}, AccWeighing) ->
+        fun({Weighing, _Target}, AccWeighing) ->
             AccWeighing + Weighing
         end, 0, WeighingList).
 
@@ -719,7 +719,7 @@ total_weighing(WeighingList) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec rand_by_weigh([WeighingObject], TotalWeighing) -> ReturnWeighingObject when
-    WeighingObject :: {Target, Weighing},
+    WeighingObject :: {Weighing, Target},
     TotalWeighing :: pos_integer(),
     Target :: term(),
     Weighing :: non_neg_integer(),
@@ -727,18 +727,18 @@ total_weighing(WeighingList) ->
 rand_by_weigh(WeighingList, TotalWeighing) ->
     Seed = rand:uniform(TotalWeighing),
     {LeftWeighing, Target} = lists:foldl(
-        fun({CurFunc, Weighing}, {AccWeighing, AccFunc}) ->
-            case AccFunc of
+        fun({Weighing, CurTarget}, {AccWeighing, AccTarget}) ->
+            case AccTarget of
                 undefined ->
                     UpdatedAccWeighing = AccWeighing + Weighing,
                     if
                         Seed =< UpdatedAccWeighing ->
-                            {UpdatedAccWeighing, CurFunc};
+                            {UpdatedAccWeighing, CurTarget};
                         true ->
-                            {UpdatedAccWeighing, AccFunc}
+                            {UpdatedAccWeighing, AccTarget}
                     end;
                 _Selected ->
-                    {AccWeighing, AccFunc}
+                    {AccWeighing, AccTarget}
             end
         end, {0, undefined}, WeighingList),
     {LeftWeighing, Target}.
