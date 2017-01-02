@@ -50,7 +50,8 @@
     for_each_line_in_file/2,
     total_weighing/1,
     rand_by_weigh/1,
-    rand_by_weigh/2
+    rand_by_weigh/2,
+    uuid/0
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -749,6 +750,17 @@ rand_by_weigh(TotalWeighing, WeighingList) ->
             end
         end, {0, undefined}, WeighingList),
     {LeftWeighing, Target}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Generate uuid in atom.
+%% Caution! Be careful of this function. Improper use may lead to memory leak.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec uuid() -> atom(). % generic atom
+uuid() ->
+    list_to_atom(uuid:uuid_to_string(uuid:get_v4())).
 
 %%%===================================================================
 %%% Internal functions
