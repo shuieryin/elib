@@ -164,13 +164,11 @@ init({StopServerMethod, InfoServerName}) ->
 
     io:format("started~n"),
 
-    case whereis(wechat_mud_SUITE) of
+    case whereis(list_to_atom(AppNameStr ++ "_SUITE")) of
         undefined ->
-            % io:format("no TestProcess:~n"),
             ok;
         TestProcess ->
-            % io:format("TestProcess:~p~n", [TestProcess]),
-            TestProcess ! {TestProcess, wechat_started}
+            TestProcess ! {TestProcess, list_to_atom(AppNameStr ++ "_started")}
     end,
 
     {ok, State}.
