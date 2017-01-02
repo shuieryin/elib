@@ -700,7 +700,7 @@ for_each_line_in_file(FilePath, Func) ->
     Weighing :: non_neg_integer(),
     ReturnWeighingObject :: WeighingObject.
 rand_by_weigh(WeighingList) ->
-    rand_by_weigh(WeighingList, total_weighing(WeighingList)).
+    rand_by_weigh(total_weighing(WeighingList), WeighingList).
 
 %%--------------------------------------------------------------------
 %% @doc
