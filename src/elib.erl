@@ -588,7 +588,14 @@ connect_node(NodeAddr) ->
         true ->
             true;
         false ->
-            Result = net_kernel:connect_node(NodeAddr),
+            self() ! check_node,
+            Result = receive
+                         check_node ->
+                             net_kernel:connect_node(NodeAddr)
+                     after
+                         1000 ->
+                             false
+                     end,
             timer:sleep(250),
             Result
     end.
