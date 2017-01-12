@@ -51,7 +51,8 @@
     total_weighing/1,
     rand_by_weigh/1,
     rand_by_weigh/2,
-    uuid/0
+    uuid/0,
+    gen_get_params/3
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -762,6 +763,29 @@ rand_by_weigh(TotalWeighing, WeighingList) ->
 uuid() ->
     list_to_atom(uuid:uuid_to_string(uuid:get_v4())).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Implementation function for gen_get_params/1.
+%% @see gen_get_params/1.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec gen_get_params(Pos, Bin, AccParamsMap) -> Params when
+    Pos :: integer(),
+    Bin :: binary(),
+    AccParamsMap :: map(),
+    Params :: map().
+gen_get_params(
+    -1,
+    _Bin,
+    ParamsMap
+) ->
+    ParamsMap;
+gen_get_params(Pos, Bin, ParamsMap) ->
+    {ValueBin, CurPosByValue} = gen_get_param_value(binary:at(Bin, Pos), [], Pos - 1, Bin),
+    {KeyBin, CurPosByKey} = gen_req_param_key(binary:at(Bin, CurPosByValue), [], CurPosByValue - 1, Bin),
+    gen_get_params(CurPosByKey, Bin, maps:put(binary_to_atom(KeyBin, unicode), ValueBin, ParamsMap)).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -931,3 +955,41 @@ read_line_and_exec(Device, Func) ->
             Func(re:replace(RawLine, <<"\n">>, <<>>, [{return, binary}])),
             read_line_and_exec(Device, Func)
     end.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% This function generates request raw request param values.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec gen_get_param_value(CurByte, ValueBinList, Pos, SrcBin) -> {ValueBin, CurPos} when
+    CurByte :: byte(),
+    ValueBinList :: [CurByte],
+    Pos :: integer(), % generic integer
+    SrcBin :: binary(),
+    ValueBin :: SrcBin,
+    CurPos :: Pos.
+gen_get_param_value($=, ValueBinList, Pos, _SrcBin) ->
+    {list_to_binary(ValueBinList), Pos};
+gen_get_param_value(CurByte, ValueBinList, Pos, SrcBin) ->
+    gen_get_param_value(binary:at(SrcBin, Pos), [CurByte | ValueBinList], Pos - 1, SrcBin).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% This function generates request raw request param keys.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec gen_req_param_key(CurByte, KeyBinList, Pos, SrcBin) -> {KeyBin, CurPos} when
+    CurByte :: byte(),
+    KeyBinList :: [CurByte],
+    Pos :: integer(), % generic integer
+    SrcBin :: binary(),
+    KeyBin :: SrcBin,
+    CurPos :: Pos.
+gen_req_param_key($&, KeyBinList, Pos, _SrcBin) ->
+    {list_to_binary(KeyBinList), Pos};
+gen_req_param_key(CurByte, KeyBinList, -1, _SrcBin) ->
+    {list_to_binary([CurByte | KeyBinList]), -1};
+gen_req_param_key(CurByte, KeyBinList, Pos, SrcBin) ->
+    gen_req_param_key(binary:at(SrcBin, Pos), [CurByte | KeyBinList], Pos - 1, SrcBin).
