@@ -257,22 +257,19 @@ binary_join(List, Sep) ->
 type_values(ModuleName, TypeName) ->
     ModulePath = module_src_path(ModuleName),
     {ok, AbstractCode} = dialyzer_utils:get_abstract_code_from_src(ModulePath),
-    {ok, TypeDict} = dialyzer_utils:get_record_and_type_info(AbstractCode),
+    {ok, TypeMap} = dialyzer_utils:get_record_and_type_info(AbstractCode),
 
     TypeKey = {type, TypeName, 0},
-    case dict:is_key(TypeKey, TypeDict) of
-        true ->
-            {{ModuleName, {ModulePath, _SigNum}, RawValues, []}, any}
-                = dict:fetch(TypeKey, TypeDict),
-
+    case maps:get(TypeKey, TypeMap, undefined) of
+        undefined ->
+            undefined;
+        {{ModuleName, {ModulePath, _SigNum}, RawValues, []}, any} ->
             case RawValues of
                 {type, _SigNum, _ListType, TypeList} ->
                     [TypeAtom || {_TypeType, _TypeSigNum, TypeAtom} <- TypeList];
                 {_TypeType, _SigNum, TypeAtom} ->
                     [TypeAtom]
-            end;
-        false ->
-            undefined
+            end
     end.
 
 %%--------------------------------------------------------------------
