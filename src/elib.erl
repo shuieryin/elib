@@ -52,6 +52,7 @@
     rand_by_weigh/1,
     rand_by_weigh/2,
     uuid/0,
+    uuid_bin/0,
     gen_get_params/1,
     has_function/3
 ]).
@@ -760,6 +761,16 @@ rand_by_weigh(TotalWeighing, WeighingList) ->
 -spec uuid() -> atom(). % generic atom
 uuid() ->
     list_to_atom(uuid:uuid_to_string(uuid:get_v4())).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Generate uuid in binary.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec uuid_bin() -> binary(). % generic atom
+uuid_bin() ->
+    list_to_binary(uuid:uuid_to_string(uuid:get_v4())).
 
 %%--------------------------------------------------------------------
 %% @doc
