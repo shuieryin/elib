@@ -52,7 +52,8 @@
     rand_by_weigh/1,
     rand_by_weigh/2,
     uuid/0,
-    gen_get_params/1
+    gen_get_params/1,
+    has_function/3
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -770,6 +771,18 @@ uuid() ->
 gen_get_params(HeaderParams) ->
     gen_get_params(size(HeaderParams) - 1, HeaderParams, #{}).
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Check if module has function.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec has_function(module(), string() | binary(), integer()) -> boolean().
+has_function(Module, FuncStr, Arity) when is_list(FuncStr) ->
+    has_function(Module, list_to_binary(FuncStr), Arity);
+has_function(Module, FuncBin, Arity) when is_binary(FuncBin) ->
+    traverse_function_names(Module:module_info(exports), FuncBin, Arity).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -1000,3 +1013,20 @@ gen_req_param_key(CurByte, KeyBinList, -1, _SrcBin) ->
     {list_to_binary([CurByte | KeyBinList]), -1};
 gen_req_param_key(CurByte, KeyBinList, Pos, SrcBin) ->
     gen_req_param_key(binary:at(SrcBin, Pos), [CurByte | KeyBinList], Pos - 1, SrcBin).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Traverse function names.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec traverse_function_names([{atom(), integer()}], binary(), integer()) -> boolean().
+traverse_function_names([{FuncAtom, Arity} | RestFunctionInfo], TargetFuncBin, Arity) ->
+    case atom_to_binary(FuncAtom, utf8) == TargetFuncBin of
+        true ->
+            true;
+        false ->
+            traverse_function_names(RestFunctionInfo, TargetFuncBin, Arity)
+    end;
+traverse_function_names([], _TargetFuncBin, _Arity) ->
+    false.
