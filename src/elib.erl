@@ -1021,10 +1021,15 @@ gen_req_param_key(CurByte, KeyBinList, Pos, SrcBin) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec traverse_function_names([{atom(), integer()}], binary(), integer()) -> boolean().
-traverse_function_names([{FuncAtom, Arity} | RestFunctionInfo], TargetFuncBin, Arity) ->
+traverse_function_names([{FuncAtom, Arity} | RestFunctionInfo], TargetFuncBin, TargetArity) ->
     case atom_to_binary(FuncAtom, utf8) == TargetFuncBin of
         true ->
-            true;
+            if
+                TargetArity == -1; Arity == TargetArity -> % or condition
+                    true;
+                true -> % default
+                    false
+            end;
         false ->
             traverse_function_names(RestFunctionInfo, TargetFuncBin, Arity)
     end;
