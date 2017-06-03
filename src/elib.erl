@@ -54,7 +54,8 @@
     uuid/0,
     uuid_bin/0,
     gen_get_params/1,
-    has_function/3
+    has_function/3,
+    http_request/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -793,6 +794,63 @@ has_function(Module, FuncStr, Arity) when is_list(FuncStr) ->
     has_function(Module, list_to_binary(FuncStr), Arity);
 has_function(Module, FuncBin, Arity) when is_binary(FuncBin) ->
     traverse_function_names(Module:module_info(exports), FuncBin, Arity).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Make http request.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec http_request(UriBin :: binary(), BodyMap :: map()) -> map().
+http_request(UriBin, BodyMap) ->
+    RequestParams = {
+        % URI
+        binary_to_list(UriBin),
+
+        % Headers
+        [
+            {
+                "Content-Type", "application/x-www-form-urlencoded",
+                "timestamp", integer_to_list(elib:timestamp())
+            }
+        ],
+
+        % Content type
+        "raw",
+
+        %Body
+        jsx:encode(BodyMap)
+    },
+
+    error_logger:info_msg("Sending request:~p~n", [RequestParams]),
+
+    Response = httpc:request(
+        % Method
+        post,
+
+        % Request
+        RequestParams,
+
+        % Http options
+        [{ssl, [{verify, 0}]}],
+
+        % Options
+        []
+    ),
+
+    case Response of
+        {ok, {{_HttpVersion, _HttpStatusCode, _OK}, _ResponseHeaders, BodyStr}} ->
+            error_logger:info_msg("HttpResponse:~p~n", [Response]),
+            case BodyStr of
+                [] ->
+                    undefined;
+                _Json ->
+                    jsx:decode(BodyStr, [return_maps])
+            end;
+        Error ->
+            error_logger:error_msg("~p", [Error]),
+            undefined
+    end.
 
 %%%===================================================================
 %%% Internal functions
