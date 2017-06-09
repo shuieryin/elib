@@ -803,26 +803,44 @@ has_function(Module, FuncBin, Arity) when is_binary(FuncBin) ->
 %%--------------------------------------------------------------------
 -spec http_request(UriBin :: binary(), BodyMap :: map(), get | post) -> map().
 http_request(UriBin, BodyMap, Method) ->
-    RequestParams = {
-        % URI
-        binary_to_list(UriBin),
+    RequestParams =
+        case Method of
+            post ->
+                {
+                    % URI
+                    binary_to_list(UriBin),
 
-        % Headers
-        [
-            {
-                "Content-Type", "application/x-www-form-urlencoded",
-                "timestamp", integer_to_list(elib:timestamp())
-            }
-        ],
+                    % Headers
+                    [
+                        {
+                            "Content-Type", "application/x-www-form-urlencoded",
+                            "timestamp", integer_to_list(elib:timestamp())
+                        }
+                    ],
 
-        % Content type
-        "raw",
+                    % Content type
+                    "raw",
 
-        %Body
-        jsx:encode(BodyMap)
-    },
+                    %Body
+                    jsx:encode(BodyMap)
+                };
+            get ->
+                {
+                    % URI
+                    binary_to_list(UriBin),
+
+                    [
+                        {
+                            "Content-Type", "application/x-www-form-urlencoded",
+                            "timestamp", integer_to_list(elib:timestamp())
+                        }
+                    ]
+                }
+        end,
 
     error_logger:info_msg("Sending request:~p~n", [RequestParams]),
+
+    httpc:request(get, {"http://www.erlang.org", []}, [], []),
 
     Response = httpc:request(
         % Method
