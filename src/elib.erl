@@ -812,10 +812,10 @@ http_request(UriBin, BodyMap, Method) ->
 
                     % Headers
                     [
-                        {
-                            "Content-Type", "application/x-www-form-urlencoded",
-                            "timestamp", integer_to_list(elib:timestamp())
-                        }
+%%                        {
+%%                            "Content-Type", "application/x-www-form-urlencoded",
+%%                            "timestamp", integer_to_list(elib:timestamp())
+%%                        }
                     ],
 
                     % Content type
@@ -829,12 +829,7 @@ http_request(UriBin, BodyMap, Method) ->
                     % URI
                     binary_to_list(UriBin),
 
-                    [
-                        {
-                            "Content-Type", "application/x-www-form-urlencoded",
-                            "timestamp", integer_to_list(elib:timestamp())
-                        }
-                    ]
+                    []
                 }
         end,
 
