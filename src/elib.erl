@@ -55,7 +55,7 @@
     uuid_bin/0,
     gen_get_params/1,
     has_function/3,
-    http_request/2
+    http_request/3
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -801,8 +801,8 @@ has_function(Module, FuncBin, Arity) when is_binary(FuncBin) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec http_request(UriBin :: binary(), BodyMap :: map()) -> map().
-http_request(UriBin, BodyMap) ->
+-spec http_request(UriBin :: binary(), BodyMap :: map(), get | post) -> map().
+http_request(UriBin, BodyMap, Method) ->
     RequestParams = {
         % URI
         binary_to_list(UriBin),
@@ -826,7 +826,7 @@ http_request(UriBin, BodyMap) ->
 
     Response = httpc:request(
         % Method
-        post,
+        Method,
 
         % Request
         RequestParams,
