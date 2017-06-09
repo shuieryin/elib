@@ -858,7 +858,7 @@ http_request(UriBin, BodyMap, Method) ->
                 [] ->
                     undefined;
                 _Json ->
-                    jsx:decode(BodyStr, [return_maps])
+                    jsx:decode(list_to_binary(BodyStr), [return_maps])
             end;
         Error ->
             error_logger:error_msg("~p", [Error]),
