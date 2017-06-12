@@ -574,8 +574,8 @@ cmd_receive(OutputNode) ->
         {OutputNode, {data, {eol, OutputBin}}} ->
             io:format(<<"~n", OutputBin/binary>>),
             cmd_receive(OutputNode);
-        {OutputNode, {exit_status, 0}} ->
-            io:format("~n")
+        {OutputNode, {exit_status, ExitCode}} ->
+            io:format("ExitCode:~p~n", [ExitCode])
     end.
 
 %%--------------------------------------------------------------------
@@ -628,8 +628,10 @@ cmd_receive(OutputNode, Func) ->
         {OutputNode, {data, {eol, OutputBin}}} ->
             Func(OutputBin),
             cmd_receive(OutputNode, Func);
-        {OutputNode, {exit_status, 0}} ->
-            io:format("~n")
+        {OutputNode, {exit_status, ExitCode}} ->
+            ExitCodeBin = integer_to_binary(ExitCode),
+            Func(<<"exit ", ExitCodeBin/binary, "\n">>),
+            io:format("ExitCode:~p~n", [ExitCode])
     end.
 
 %%--------------------------------------------------------------------
