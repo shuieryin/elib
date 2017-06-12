@@ -631,6 +631,7 @@ cmd_receive(OutputNode, Func) ->
         {OutputNode, {exit_status, ExitCode}} ->
             ExitCodeBin = integer_to_binary(ExitCode),
             Func(<<"exit ", ExitCodeBin/binary, "\n">>),
+            Func(<<"done\n">>),
             io:format("ExitCode:~p~n", [ExitCode])
     end.
 
