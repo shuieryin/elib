@@ -55,7 +55,8 @@
     uuid_bin/0,
     gen_get_params/1,
     has_function/3,
-    http_request/3
+    http_request/3,
+    to_md5/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -867,6 +868,18 @@ http_request(UriBin, BodyMap, Method) ->
             undefined
     end.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Generate md5 string.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec to_md5(string() | binary()) -> string().
+to_md5(S) ->
+    Md5_bin = erlang:md5(S),
+    Md5_list = binary_to_list(Md5_bin),
+    lists:flatten(list_to_hex(Md5_list)).
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -1119,3 +1132,15 @@ traverse_function_names([{FuncAtom, Arity} | RestFunctionInfo], TargetFuncBin, T
     end;
 traverse_function_names([], _TargetFuncBin, _Arity) ->
     false.
+
+list_to_hex(L) ->
+    lists:map(fun(X) -> int_to_hex(X) end, L).
+
+int_to_hex(N) when N < 256 ->
+    [hex(N div 16), hex(N rem 16)].
+
+
+hex(N) when N < 10 ->
+    $0 + N;
+hex(N) when N >= 10, N < 16 ->
+    $a + (N - 10).
