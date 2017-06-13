@@ -838,8 +838,6 @@ http_request(UriBin, BodyMap, Method) ->
 
     error_logger:info_msg("Sending request:~p~n", [RequestParams]),
 
-    httpc:request(get, {"http://www.erlang.org", []}, [], []),
-
     Response = httpc:request(
         % Method
         Method,
