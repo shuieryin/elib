@@ -836,7 +836,7 @@ http_request(UriBin, BodyMap, Method) ->
                 }
         end,
 
-    error_logger:info_msg("Sending request:~p~n", [RequestParams]),
+    %error_logger:info_msg("Sending request:~p~n", [RequestParams]),
 
     Response = httpc:request(
         % Method
@@ -854,7 +854,7 @@ http_request(UriBin, BodyMap, Method) ->
 
     case Response of
         {ok, {{_HttpVersion, _HttpStatusCode, _OK}, _ResponseHeaders, BodyStr}} ->
-            error_logger:info_msg("HttpResponse:~p~n", [Response]),
+            %error_logger:info_msg("HttpResponse:~p~n", [Response]),
             case BodyStr of
                 [] ->
                     undefined;
@@ -862,7 +862,7 @@ http_request(UriBin, BodyMap, Method) ->
                     jsx:decode(list_to_binary(BodyStr), [return_maps])
             end;
         Error ->
-            error_logger:error_msg("~p", [Error]),
+            error_logger:error_msg("~p~n", [Error]),
             undefined
     end.
 
