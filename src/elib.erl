@@ -858,8 +858,16 @@ http_request(UriBin, BodyMap, Method) ->
             case BodyStr of
                 [] ->
                     undefined;
-                _Json ->
-                    jsx:decode(list_to_binary(BodyStr), [return_maps])
+                _HasContent ->
+                    BodyBin = list_to_binary(BodyStr),
+                    case jsx:is_json(BodyBin) of
+                        true ->
+                            jsx:decode(BodyBin, [return_maps]);
+                        false ->
+                            #{
+                                <<"response">> => BodyBin
+                            }
+                    end
             end;
         Error ->
             error_logger:error_msg("~p~n", [Error]),
