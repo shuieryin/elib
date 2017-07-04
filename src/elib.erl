@@ -260,7 +260,7 @@ binary_join(List, Sep) ->
     TypeValues :: term(). % generic term
 type_values(ModuleName, TypeName) ->
     ModulePath = module_src_path(ModuleName),
-    {ok, AbstractCode} = dialyzer_utils:get_abstract_code_from_src(ModulePath),
+    {ok, AbstractCode} = dialyzer_utils:get_core_from_src(ModulePath),
     {ok, TypeMap} = dialyzer_utils:get_record_and_type_info(AbstractCode),
 
     TypeKey = {type, TypeName, 0},
