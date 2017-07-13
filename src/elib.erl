@@ -594,6 +594,7 @@ connect_node(NodeAddr) ->
             self() ! check_node,
             Result = receive
                          check_node ->
+                             net_adm:ping(NodeAddr),
                              net_kernel:connect_node(NodeAddr)
                      after
                          1000 ->
