@@ -43,11 +43,11 @@
     str_to_term/1,
     cmd/1,
     connect_node/1,
-    cmd/2,
+    cmd/3,
     ipv6_2_ipv4/1,
     hexstr_to_bin/1,
     bin_to_hexstr/1,
-    for_each_line_in_file/2,
+    for_each_line_in_file/3,
     total_weighing/1,
     rand_by_weigh/1,
     rand_by_weigh/2,
@@ -610,30 +610,30 @@ connect_node(NodeAddr) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec cmd(string(), function()) -> ok.
-cmd(CmdStr, Func) ->
+-spec cmd(string(), function(), CustomArgs :: term()) -> ok.
+cmd(CmdStr, Func, CustomArgs) ->
     OutputNode = erlang:open_port({spawn, CmdStr},
         [stderr_to_stdout, in, exit_status,
             binary, stream, {line, 255}]),
 
-    cmd_receive(OutputNode, Func).
+    cmd_receive(OutputNode, Func, CustomArgs).
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Receive func for cmd/1.
+%% Receive func for cmd/3.
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec cmd_receive(port(), function()) -> ok.
-cmd_receive(OutputNode, Func) ->
+-spec cmd_receive(port(), function(), CustomArgs :: term()) -> ok.
+cmd_receive(OutputNode, Func, CustomArgs) ->
     receive
         {OutputNode, {data, {eol, OutputBin}}} ->
-            Func(OutputBin),
-            cmd_receive(OutputNode, Func);
+            Func(OutputBin, CustomArgs),
+            cmd_receive(OutputNode, Func, CustomArgs);
         {OutputNode, {exit_status, ExitCode}} ->
             ExitCodeBin = integer_to_binary(ExitCode),
-            Func(ExitCodeBin),
-            Func(<<"done\n">>)
+            Func(ExitCodeBin, CustomArgs),
+            Func(<<"done\n">>, CustomArgs)
     end.
 
 %%--------------------------------------------------------------------
@@ -684,12 +684,12 @@ hexstr_to_bin([X, Y | T], Acc) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec for_each_line_in_file(FilePath, Func) -> ok when
+-spec for_each_line_in_file(FilePath, Func, CustomArgs :: term()) -> ok when
     FilePath :: file:filename_all(),
     Func :: function().
-for_each_line_in_file(FilePath, Func) ->
+for_each_line_in_file(FilePath, Func, CustomArgs) ->
     {ok, Device} = file:open(FilePath, [read]),
-    try read_line_and_exec(Device, Func)
+    try read_line_and_exec(Device, Func, CustomArgs)
     after file:close(Device)
     end,
     ok.
@@ -1045,16 +1045,16 @@ do_add_record_fields([], _NewRecordFieldNames, [], _NewValueBingdings, UpdatedDa
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec read_line_and_exec(Device, Func) -> [] when
+-spec read_line_and_exec(Device, Func, CustomArgs :: term()) -> [] when
     Device :: file:io_device(),
     Func :: function().
-read_line_and_exec(Device, Func) ->
+read_line_and_exec(Device, Func, CustomArgs) ->
     case io:get_line(Device, "") of
         eof ->
             [];
         RawLine ->
-            Func(re:replace(RawLine, <<"\n">>, <<>>, [{return, binary}])),
-            read_line_and_exec(Device, Func)
+            Func(re:replace(RawLine, <<"\n">>, <<>>, [{return, binary}]), CustomArgs),
+            read_line_and_exec(Device, Func, CustomArgs)
     end.
 
 %%--------------------------------------------------------------------
