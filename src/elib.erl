@@ -56,7 +56,9 @@
     gen_get_params/1,
     has_function/3,
     http_request/3,
-    to_md5/1
+    to_md5/1,
+    bin_to_document_id/1,
+    document_id_to_bin/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -886,6 +888,26 @@ to_md5(S) ->
     Md5_bin = erlang:md5(S),
     Md5_list = binary_to_list(Md5_bin),
     lists:flatten(list_to_hex(Md5_list)).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert binary to mongodb document id.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec bin_to_document_id(binary()) -> {binary()}.
+bin_to_document_id(IdBin) ->
+    {hexstr_to_bin(binary_to_list(IdBin))}.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert mongodb document id to binary.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec document_id_to_bin({binary()}) -> binary().
+document_id_to_bin({Id}) ->
+    list_to_binary(bin_to_hexstr(Id)).
 
 %%%===================================================================
 %%% Internal functions
