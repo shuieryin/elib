@@ -148,6 +148,7 @@ stop() ->
     Reason :: term(). % generic term
 init({StopServerMethod, InfoServerName}) ->
     io:format("~p starting...", [?MODULE]),
+    register(InfoServerName, self()),
 
     AppNameStr = begin
                      [ProjectPath | _RestPath] = re:split(filename:absname(""), "_build", [{return, list}]),
