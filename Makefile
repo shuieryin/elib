@@ -8,3 +8,6 @@ install:
 
 reset:
 	@./config/rebar3 reset
+
+edoc:
+	@./config/rebar3 edoc

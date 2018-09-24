@@ -82,7 +82,7 @@ is_module_exist(Module) ->
                 _InfoList ->
                     true
             catch
-                _ErrorType:_Reason ->
+                _ErrorType:_Reason:_StackTrace ->
                     false
             end;
 
