@@ -1100,7 +1100,7 @@ gen_get_params(
 gen_get_params(Pos, Bin, ParamsMap) ->
     {ValueBin, CurPosByValue} = gen_get_param_value(binary:at(Bin, Pos), [], Pos - 1, Bin),
     {KeyBin, CurPosByKey} = gen_req_param_key(binary:at(Bin, CurPosByValue), [], CurPosByValue - 1, Bin),
-    gen_get_params(CurPosByKey, Bin, maps:put(binary_to_atom(KeyBin, unicode), ValueBin, ParamsMap)).
+    gen_get_params(CurPosByKey, Bin, maps:put(KeyBin, ValueBin, ParamsMap)).
 
 %%--------------------------------------------------------------------
 %% @doc
