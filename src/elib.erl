@@ -905,9 +905,11 @@ bin_to_document_id(IdBin) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec document_id_to_bin({binary()}) -> binary().
+-spec document_id_to_bin({binary()} | binary()) -> binary().
 document_id_to_bin({Id}) ->
-    list_to_binary(bin_to_hexstr(Id)).
+    list_to_binary(bin_to_hexstr(Id));
+document_id_to_bin(IdBin) ->
+    IdBin.
 
 %%%===================================================================
 %%% Internal functions
