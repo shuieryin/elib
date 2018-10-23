@@ -58,7 +58,8 @@
     http_request/3,
     to_md5/1,
     bin_to_document_id/1,
-    document_id_to_bin/1
+    document_id_to_bin/1,
+    deep_merge_maps/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -90,6 +91,7 @@ is_module_exist(Module) ->
             false
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Detect value type.
@@ -114,6 +116,7 @@ type_of(X) when is_atom(X) -> atom;
 type_of(X) when is_map(X) -> map;
 type_of(_X) -> unknown.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Return timestamp in milliseconds.
@@ -125,6 +128,7 @@ type_of(_X) -> unknown.
 timestamp() ->
     {Hour, Minute, _Second} = os:timestamp(),
     Hour * 1000000 + Minute.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -139,6 +143,7 @@ timestamp() ->
 hot_code_replace(ModuleNameList) ->
     [begin code:purge(ModuleName), code:load_file(ModuleName) end || ModuleName <- ModuleNameList].
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Finds the element position from list.
@@ -151,6 +156,7 @@ hot_code_replace(ModuleNameList) ->
     Pos :: -1 | pos_integer(). % generic integer
 index_of(Item, List) ->
     index_of(Item, List, 1).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -175,6 +181,7 @@ until_process_terminated(PidOrName) ->
             ok
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Lowercases the first letter of give string.
@@ -187,6 +194,7 @@ until_process_terminated(PidOrName) ->
 first_to_lower([First | Rest] = SrcString) when is_list(SrcString) ->
     FirstLowered = string:to_lower([First]),
     FirstLowered ++ Rest.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -205,6 +213,7 @@ remove_last_newline(SrcList) ->
             SrcList
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Random pick element from list.
@@ -220,6 +229,7 @@ random_from_list(SrcList) ->
     ListSize = length(SrcList),
     RandomPos = rand:uniform(ListSize),
     lists:nth(RandomPos, SrcList).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -243,6 +253,7 @@ binary_join(List, Sep) ->
         <<>>,
         List
     ).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -278,6 +289,7 @@ type_values(ModuleName, TypeName) ->
             end
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Random float range. Input arguments must be integer.
@@ -295,6 +307,7 @@ rr(Start, End) ->
                     Start + rand:uniform(End - Start)
             end,
     Value / 100.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -324,6 +337,7 @@ parse_target_id(TargetArgs) ->
         end,
     {ok, TargetId, Sequence}.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Random boolean value.
@@ -333,6 +347,7 @@ parse_target_id(TargetArgs) ->
 -spec rb() -> boolean().
 rb() ->
     rand:uniform() > 0.499.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -345,6 +360,7 @@ rb() ->
     SrcPath :: file:filename().
 module_src_path(ModuleName) ->
     get_module_src_path(ModuleName:module_info(compile)).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -359,6 +375,7 @@ pp(ReturnContentBinary) ->
     NewLine = <<"~n">>,
     error_logger:info_msg(unicode:characters_to_list(<<Content/binary, NewLine/binary>>)).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Show show last given number of errors.
@@ -370,6 +387,7 @@ pp(ReturnContentBinary) ->
 show_errors(Limit) when is_integer(Limit) ->
     rb:start([{type, [error_report, error]}, {max, Limit}]),
     ok.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -387,6 +405,7 @@ collect_record_value(RecordFieldNames, Record, NewFieldNames, ExistingFieldBindi
     [_RecordName | DataList] = tuple_to_list(Record),
     do_collect_record_value(RecordFieldNames, DataList, NewFieldNames, ExistingFieldBindings).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Convert list of strings to list of atoms.
@@ -399,6 +418,7 @@ collect_record_value(RecordFieldNames, Record, NewFieldNames, ExistingFieldBindi
 strings_to_atoms(StringList) ->
     [list_to_atom(String) || String <- StringList].
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Convert list of strings to list of atoms.
@@ -410,6 +430,7 @@ strings_to_atoms(StringList) ->
     AtomList :: [atom()]. % generic atom
 binaries_to_atoms(StringList) ->
     [binary_to_atom(Bin, utf8) || Bin <- StringList].
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -427,6 +448,7 @@ update_record_value(RecordFieldNames, Record, NewValueBindings) ->
     UpdatedDataList = do_update_record_value(RecordFieldNames, ExistingDataList, NewValueBindings, []),
     list_to_tuple([RecordName | UpdatedDataList]).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Remove record fields.
@@ -442,6 +464,7 @@ remove_record_fields(RecordFieldNames, Record, FieldNamesToBeRemoved) ->
     [RecordName | ExistingDataList] = tuple_to_list(Record),
     UpdatedDataList = do_remove_record_fields(RecordFieldNames, ExistingDataList, FieldNamesToBeRemoved, []),
     list_to_tuple([RecordName | UpdatedDataList]).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -459,6 +482,7 @@ add_record_fields(OldRecordFieldNames, NewRecordFieldNames, Record, NewValueBind
     [RecordName | ExistingDataList] = tuple_to_list(Record),
     UpdatedDataList = do_add_record_fields(OldRecordFieldNames, NewRecordFieldNames, ExistingDataList, NewValueBindings, []),
     list_to_tuple([RecordName | UpdatedDataList]).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -483,6 +507,7 @@ f2i(Float, Min) ->
             IntVal
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Convert generic term to readable binary
@@ -505,6 +530,7 @@ to_binary(Term) when is_list(Term) ->
 to_binary(Term) ->
     term_to_binary(Term).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Retrieve current application name.
@@ -518,6 +544,7 @@ app_name() ->
                      filename:basename(ProjectPath)
                  end,
     list_to_atom(AppNameStr).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -539,6 +566,7 @@ retrieve_n_break(Func, [H | T]) ->
     end;
 retrieve_n_break(Func, []) when is_function(Func, 1) -> undefined.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Convert string content to term.
@@ -550,6 +578,7 @@ str_to_term(SrcStr) ->
     {ok, Tokens, _EndLocation} = erl_scan:string(SrcStr),
     {ok, Term} = erl_parse:parse_term(Tokens),
     Term.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -564,6 +593,7 @@ cmd(CmdStr) ->
             binary, stream, {line, 255}]),
 
     cmd_receive(OutputNode).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -580,6 +610,7 @@ cmd_receive(OutputNode) ->
         {OutputNode, {exit_status, ExitCode}} ->
             io:format("ExitCode:~p~n", [ExitCode])
     end.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -606,6 +637,7 @@ connect_node(NodeAddr) ->
             Result
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Execute command and print output in realtime.
@@ -619,6 +651,7 @@ cmd(CmdStr, Func, CustomArgs) ->
             binary, stream, {line, 255}]),
 
     cmd_receive(OutputNode, Func, CustomArgs).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -638,6 +671,7 @@ cmd_receive(OutputNode, Func, CustomArgs) ->
             Func(<<"done\n">>, CustomArgs)
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% convert ipv6 to ipv4.
@@ -654,6 +688,7 @@ ipv6_2_ipv4(Ipv6Bin) ->
             {error, not_ipv6_addr}
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% convert binary to hex string
@@ -664,6 +699,7 @@ ipv6_2_ipv4(Ipv6Bin) ->
 bin_to_hexstr(Bin) ->
     lists:flatten([io_lib:format("~2.16.0B", [X]) ||
         X <- binary_to_list(Bin)]).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -679,6 +715,7 @@ hexstr_to_bin([], Acc) ->
 hexstr_to_bin([X, Y | T], Acc) ->
     {ok, [V], []} = io_lib:fread("~16u", [X, Y]),
     hexstr_to_bin(T, [V | Acc]).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -696,6 +733,7 @@ for_each_line_in_file(FilePath, Func, CustomArgs) ->
     end,
     ok.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Random pick a target by weighing.
@@ -709,6 +747,7 @@ for_each_line_in_file(FilePath, Func, CustomArgs) ->
     ReturnWeighingObject :: WeighingObject.
 rand_by_weigh(WeighingList) ->
     rand_by_weigh(total_weighing(WeighingList), WeighingList).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -726,6 +765,7 @@ total_weighing(WeighingList) ->
         fun({Weighing, _Target}, AccWeighing) ->
             AccWeighing + Weighing
         end, 0, WeighingList).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -758,6 +798,7 @@ rand_by_weigh(TotalWeighing, WeighingList) ->
         end, {0, undefined}, WeighingList),
     {LeftWeighing, Target}.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Generate uuid in atom.
@@ -769,6 +810,7 @@ rand_by_weigh(TotalWeighing, WeighingList) ->
 uuid() ->
     list_to_atom(uuid:uuid_to_string(uuid:get_v4())).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Generate uuid in binary.
@@ -779,6 +821,7 @@ uuid() ->
 uuid_bin() ->
     list_to_binary(uuid:uuid_to_string(uuid:get_v4())).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% This function generates request raw request params to get_param map.
@@ -788,6 +831,7 @@ uuid_bin() ->
 -spec gen_get_params(binary()) -> map().
 gen_get_params(HeaderParams) ->
     gen_get_params(size(HeaderParams) - 1, HeaderParams, #{}).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -800,6 +844,7 @@ has_function(Module, FuncStr, Arity) when is_list(FuncStr) ->
     has_function(Module, list_to_binary(FuncStr), Arity);
 has_function(Module, FuncBin, Arity) when is_binary(FuncBin) ->
     traverse_function_names(Module:module_info(exports), FuncBin, Arity).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -877,6 +922,7 @@ http_request(UriBin, BodyMap, Method) ->
             undefined
     end.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Generate md5 string.
@@ -889,6 +935,7 @@ to_md5(S) ->
     Md5_list = binary_to_list(Md5_bin),
     lists:flatten(list_to_hex(Md5_list)).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Convert binary to mongodb document id.
@@ -898,6 +945,7 @@ to_md5(S) ->
 -spec bin_to_document_id(binary()) -> {binary()}.
 bin_to_document_id(IdBin) ->
     {hexstr_to_bin(binary_to_list(IdBin))}.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -910,6 +958,40 @@ document_id_to_bin({Id}) ->
     list_to_binary(bin_to_hexstr(Id));
 document_id_to_bin(IdBin) ->
     IdBin.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Deep merge two maps, same key of values in Map 1 will be overwritten
+%% by Map2.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec deep_merge_maps(Map1 :: map(), Map2 :: map()) -> Map3 :: map().
+deep_merge_maps(Map1, Map2) ->
+    maps:fold(
+        fun(Key, TargetValue, AccMap) ->
+            case is_map(TargetValue) of
+                false ->
+                    AccMap#{
+                        Key => TargetValue
+                    };
+                true ->
+                    case maps:get(Key, AccMap, undefined) of
+                        OriValue when is_map(OriValue) ->
+                            AccMap#{
+                                Key := deep_merge_maps(OriValue, TargetValue)
+                            };
+                        _OtherValue ->
+                            AccMap#{
+                                Key => TargetValue
+                            }
+                    end
+            end
+        end,
+        Map1, Map2
+    ).
+
 
 %%%===================================================================
 %%% Internal functions
