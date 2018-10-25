@@ -701,8 +701,7 @@ ipv6_2_ipv4(Ipv6Bin) ->
 %%--------------------------------------------------------------------
 -spec bin_to_hexstr(binary()) -> string().
 bin_to_hexstr(Bin) ->
-    lists:flatten([io_lib:format("~2.16.0B", [X]) ||
-        X <- binary_to_list(Bin)]).
+    binary_to_list(bin_to_hex(Bin)).
 
 
 %%--------------------------------------------------------------------
@@ -933,11 +932,16 @@ http_request(UriBin, BodyMap, Method) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec to_md5(string() | binary()) -> string().
-to_md5(S) ->
-    Md5_bin = erlang:md5(S),
-    Md5_list = binary_to_list(Md5_bin),
-    lists:flatten(list_to_hex(Md5_list)).
+-spec to_md5(iodata()) -> iodata().
+to_md5(Data) ->
+    Md5Bin = erlang:md5(Data),
+    Md5HexBin = bin_to_hex(Md5Bin),
+    if
+        is_list(Data) ->
+            binary_to_list(Md5HexBin);
+        true ->
+            Md5HexBin
+    end.
 
 
 %%--------------------------------------------------------------------
