@@ -61,7 +61,8 @@
     document_id_to_bin/1,
     deep_merge_maps/2,
     bin_to_hex/1,
-    list_to_hex/1
+    list_to_hex/1,
+    flatten_obj/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -1001,12 +1002,57 @@ deep_merge_maps(Map1, Map2) ->
     ).
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Binary to hex binary.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec bin_to_hex(binary()) -> binary().
 bin_to_hex(B) when is_binary(B) ->
     bin_to_hex(B, <<>>).
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% String to hex string.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec list_to_hex(list()) -> list().
 list_to_hex(L) ->
-    lists:map(fun(X) -> int_to_hex(X) end, L).
+    binary_to_list(bin_to_hex(list_to_binary(L))).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Flatten object to binary list.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec flatten_obj(map() | list(), list()) -> [binary()].
+flatten_obj(Obj, ValueList) when is_map(Obj) ->
+    maps:fold(
+        fun(_Key, Value, AccValueList) ->
+            flatten_obj(Value, AccValueList)
+        end,
+        ValueList,
+        Obj
+    );
+flatten_obj(Obj, ValueList) when is_list(Obj) ->
+    lists:foldl(
+        fun(Value, AccValueList) ->
+            flatten_obj(Value, AccValueList)
+        end,
+        ValueList,
+        Obj
+    );
+flatten_obj(Obj, ValueList) when is_integer(Obj) ->
+    [integer_to_binary(Obj) | ValueList];
+flatten_obj(Obj, ValueList) when is_float(Obj) ->
+    [float_to_binary(Obj) | ValueList];
+flatten_obj(_Obj, ValueList) ->
+    ValueList.
 
 
 %%%===================================================================
@@ -1261,10 +1307,6 @@ traverse_function_names([{FuncAtom, Arity} | RestFunctionInfo], TargetFuncBin, T
     end;
 traverse_function_names([], _TargetFuncBin, _Arity) ->
     false.
-
-
-int_to_hex(N) when N < 256 ->
-    [hex(N div 16), hex(N rem 16)].
 
 
 bin_to_hex(<<>>, Acc) -> Acc;
