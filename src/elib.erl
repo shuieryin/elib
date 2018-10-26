@@ -843,11 +843,15 @@ gen_get_params(HeaderParams) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec has_function(module(), string() | binary(), integer()) -> boolean().
-has_function(Module, FuncStr, Arity) when is_list(FuncStr) ->
-    has_function(Module, list_to_binary(FuncStr), Arity);
-has_function(Module, FuncBin, Arity) when is_binary(FuncBin) ->
-    traverse_function_names(Module:module_info(exports), FuncBin, Arity).
+-spec has_function(module(), atom(), integer()) -> boolean().
+has_function(Module, FuncName, TargetArity) ->
+    ExportedFunctions = Module:module_info(exports),
+    case lists:keyfind(FuncName, 1, ExportedFunctions) of
+        {FuncName, Arity} ->
+            TargetArity == -1 orelse Arity == TargetArity;
+        false ->
+            false
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -1076,6 +1080,7 @@ get_module_src_path([{source, SrcPath} | _RestPaths]) ->
 get_module_src_path([_Other | Rest]) ->
     get_module_src_path(Rest).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Implementation function for collect_record_value/3.
@@ -1106,6 +1111,7 @@ do_collect_record_value(_RecordFieldNames, _DataList, [], FinalFieldBingdings) -
 do_collect_record_value([], [], _TargetFieldNames, FinalFieldBingdings) ->
     FinalFieldBingdings.
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Implementation function for index_of/2.
@@ -1124,6 +1130,7 @@ index_of(Elem, [Elem | _Tail], Pos) ->
     Pos;
 index_of(Item, [_NotMatchItem | Tail], Pos) ->
     index_of(Item, Tail, Pos + 1).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -1152,6 +1159,7 @@ do_update_record_value(_RecordFieldNames, RestDataList, [], UpdatedDataList) ->
 do_update_record_value([], [], _NewValueBingdings, UpdatedDataList) ->
     lists:reverse(UpdatedDataList).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Implementation function for remove_record_fields/3.
@@ -1178,6 +1186,7 @@ do_remove_record_fields(_RecordFieldNames, RestDataList, [], UpdatedDataList) ->
     lists:reverse(UpdatedDataList) ++ RestDataList;
 do_remove_record_fields([], [], _FieldNamesToBeRemoved, UpdatedDataList) ->
     lists:reverse(UpdatedDataList).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -1209,6 +1218,7 @@ do_add_record_fields(_OldRecordFieldNames, _NewRecordFieldNames, RestDataList, [
 do_add_record_fields([], _NewRecordFieldNames, [], _NewValueBingdings, UpdatedDataList) ->
     lists:reverse(UpdatedDataList).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @see traverse_file_by_line/2
@@ -1226,6 +1236,7 @@ read_line_and_exec(Device, Func, CustomArgs) ->
             Func(re:replace(RawLine, <<"\n">>, <<>>, [{return, binary}]), CustomArgs),
             read_line_and_exec(Device, Func, CustomArgs)
     end.
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -1250,6 +1261,7 @@ gen_get_params(Pos, Bin, ParamsMap) ->
     {KeyBin, CurPosByKey} = gen_req_param_key(binary:at(Bin, CurPosByValue), [], CurPosByValue - 1, Bin),
     gen_get_params(CurPosByKey, Bin, maps:put(KeyBin, ValueBin, ParamsMap)).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% This function generates request raw request param values.
@@ -1267,6 +1279,7 @@ gen_get_param_value($=, ValueBinList, Pos, _SrcBin) ->
     {list_to_binary(ValueBinList), Pos};
 gen_get_param_value(CurByte, ValueBinList, Pos, SrcBin) ->
     gen_get_param_value(binary:at(SrcBin, Pos), [CurByte | ValueBinList], Pos - 1, SrcBin).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -1287,28 +1300,6 @@ gen_req_param_key(CurByte, KeyBinList, -1, _SrcBin) ->
     {list_to_binary([CurByte | KeyBinList]), -1};
 gen_req_param_key(CurByte, KeyBinList, Pos, SrcBin) ->
     gen_req_param_key(binary:at(SrcBin, Pos), [CurByte | KeyBinList], Pos - 1, SrcBin).
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Traverse function names.
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec traverse_function_names([{atom(), integer()}], binary(), integer()) -> boolean().
-traverse_function_names([{FuncAtom, Arity} | RestFunctionInfo], TargetFuncBin, TargetArity) ->
-    case atom_to_binary(FuncAtom, utf8) == TargetFuncBin of
-        true ->
-            if
-                TargetArity == -1; Arity == TargetArity -> % or condition
-                    true;
-                true -> % default
-                    false
-            end;
-        false ->
-            traverse_function_names(RestFunctionInfo, TargetFuncBin, Arity)
-    end;
-traverse_function_names([], _TargetFuncBin, _Arity) ->
-    false.
 
 
 bin_to_hex(<<>>, Acc) -> Acc;
