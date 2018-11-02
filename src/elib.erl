@@ -1054,7 +1054,8 @@ flatten_obj(Obj, ValueList) when is_list(Obj) ->
 flatten_obj(Obj, ValueList) when is_integer(Obj) ->
     [integer_to_binary(Obj) | ValueList];
 flatten_obj(Obj, ValueList) when is_float(Obj) ->
-    [float_to_binary(Obj) | ValueList];
+    [ObjStr] = io_lib:format("~p", [Obj]),
+    [ObjStr | ValueList];
 flatten_obj(Obj, ValueList) when is_binary(Obj) ->
     [Obj | ValueList];
 flatten_obj(_Obj, ValueList) ->
