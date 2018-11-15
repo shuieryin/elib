@@ -62,7 +62,8 @@
     deep_merge_maps/2,
     bin_to_hex/1,
     list_to_hex/1,
-    flatten_obj/2
+    flatten_obj/2,
+    timestamp_to_date_str/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -1060,6 +1061,27 @@ flatten_obj(Obj, ValueList) when is_binary(Obj) ->
     [Obj | ValueList];
 flatten_obj(_Obj, ValueList) ->
     ValueList.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert timestamp to YYYY/MM/DD.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec timestamp_to_date_str(Timestamp :: pos_integer()) -> binary().
+timestamp_to_date_str(Timestamp) ->
+    case re:run(integer_to_binary(Timestamp), <<"^(\\d{4})(\\d{6})">>, [{capture, all, binary}]) of
+        nomatch ->
+            Timestamp;
+        {match, [_FieldValueBin, DatePart1, DatePart2]} ->
+            CurDate = calendar:now_to_local_time({binary_to_integer(DatePart1), binary_to_integer(DatePart2), 0}),
+            {{CurYear, CurMonth, CurDay}, _CurTime} = CurDate,
+            CurYearBin = integer_to_binary(CurYear),
+            CurMonthBin = integer_to_binary(CurMonth),
+            CurDayBin = integer_to_binary(CurDay),
+            <<CurYearBin/binary, "/", CurMonthBin/binary, "/", CurDayBin/binary>>
+    end.
 
 
 %%%===================================================================
