@@ -1092,10 +1092,7 @@ timestamp_to_date_bin(Timestamp) ->
 -spec localtime_to_date_bin(calendar:datetime()) -> binary().
 localtime_to_date_bin(CurDate) ->
     {{CurYear, CurMonth, CurDay}, _CurTime} = CurDate,
-    CurYearBin = integer_to_binary(CurYear),
-    CurMonthBin = integer_to_binary(CurMonth),
-    CurDayBin = integer_to_binary(CurDay),
-    <<CurYearBin/binary, "/", CurMonthBin/binary, "/", CurDayBin/binary>>.
+    list_to_binary(io_lib:format("~B/~2..0B~2..0B", [CurYear, CurMonth, CurDay])).
 
 
 %%--------------------------------------------------------------------
@@ -1124,20 +1121,7 @@ timestamp_to_datetime_bin(Timestamp) ->
 -spec localtime_to_datetime_bin(calendar:datetime()) -> binary().
 localtime_to_datetime_bin(CurDate) ->
     {{CurYear, CurMonth, CurDay}, {CurHour, CurMinute, CurSecond}} = CurDate,
-    CurYearBin = integer_to_binary(CurYear),
-    CurMonthBin = integer_to_binary(CurMonth),
-    CurDayBin = integer_to_binary(CurDay),
-    CurHourBin = integer_to_binary(CurHour),
-    CurMinuteBin = integer_to_binary(CurMinute),
-    CurSecondBin = integer_to_binary(CurSecond),
-    <<
-        CurYearBin/binary, "/",
-        CurMonthBin/binary, "/",
-        CurDayBin/binary, " ",
-        CurHourBin/binary, ":",
-        CurMinuteBin/binary, ":",
-        CurSecondBin/binary
-    >>.
+    list_to_binary(io_lib:format("~B/~2..0B~2..0B ~2..0B:~2..0B:~2..0B", [CurYear, CurMonth, CurDay, CurHour, CurMinute, CurSecond])).
 
 
 %%%===================================================================
