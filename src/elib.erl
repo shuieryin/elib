@@ -66,7 +66,8 @@
     timestamp_to_date_bin/1,
     localtime_to_date_bin/1,
     timestamp_to_datetime_bin/1,
-    localtime_to_datetime_bin/1
+    localtime_to_datetime_bin/1,
+    local_datetime_to_timestamp/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -1122,6 +1123,18 @@ timestamp_to_datetime_bin(Timestamp) ->
 localtime_to_datetime_bin(CurDate) ->
     {{CurYear, CurMonth, CurDay}, {CurHour, CurMinute, CurSecond}} = CurDate,
     list_to_binary(io_lib:format("~B/~2..0B/~2..0B ~2..0B:~2..0B:~2..0B", [CurYear, CurMonth, CurDay, CurHour, CurMinute, CurSecond])).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert local datetime to timestamp.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec local_datetime_to_timestamp(calendar:datetime()) -> pos_integer().
+local_datetime_to_timestamp(InputDatetime) ->
+    [GregorianDateTime] = calendar:local_time_to_universal_time_dst(InputDatetime),
+    calendar:datetime_to_gregorian_seconds(GregorianDateTime) - 62167219200.
 
 
 %%%===================================================================
