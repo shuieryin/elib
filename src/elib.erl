@@ -67,7 +67,9 @@
     localtime_to_date_bin/1,
     timestamp_to_datetime_bin/1,
     localtime_to_datetime_bin/1,
-    local_datetime_to_timestamp/1
+    local_datetime_to_timestamp/1,
+    timestamp_to_date_bin_short/1,
+    localtime_to_date_bin_short/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -1082,6 +1084,35 @@ timestamp_to_date_bin(Timestamp) ->
             CurDate = calendar:now_to_local_time({binary_to_integer(DatePart1), binary_to_integer(DatePart2), 0}),
             localtime_to_date_bin(CurDate)
     end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert timestamp to YYYYMMDD.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec timestamp_to_date_bin_short(Timestamp :: pos_integer()) -> binary().
+timestamp_to_date_bin_short(Timestamp) ->
+    case re:run(integer_to_binary(Timestamp), <<"^(\\d{4})(\\d{6})">>, [{capture, all, binary}]) of
+        nomatch ->
+            Timestamp;
+        {match, [_FieldValueBin, DatePart1, DatePart2]} ->
+            CurDate = calendar:now_to_local_time({binary_to_integer(DatePart1), binary_to_integer(DatePart2), 0}),
+            localtime_to_date_bin_short(CurDate)
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Convert localtime to YYYYMMDD.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec localtime_to_date_bin_short(calendar:datetime()) -> binary().
+localtime_to_date_bin_short(CurDate) ->
+    {{CurYear, CurMonth, CurDay}, _CurTime} = CurDate,
+    list_to_binary(io_lib:format("~B~2..0B~2..0B", [CurYear, CurMonth, CurDay])).
 
 
 %%--------------------------------------------------------------------
