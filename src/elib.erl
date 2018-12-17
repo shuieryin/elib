@@ -877,12 +877,7 @@ http_request(UriBin, BodyMap, Method) ->
                     binary_to_list(UriBin),
 
                     % Headers
-                    [
-%%                        {
-%%                            "Content-Type", "application/x-www-form-urlencoded",
-%%                            "timestamp", integer_to_list(elib:timestamp())
-%%                        }
-                    ],
+                    [],
 
                     % Content type
                     "raw",
@@ -895,7 +890,23 @@ http_request(UriBin, BodyMap, Method) ->
                     % URI
                     binary_to_list(UriBin),
 
+                    % Headers
                     []
+                };
+            file ->
+                {
+                    % URI
+                    binary_to_list(UriBin),
+
+                    % Headers
+                    [
+                        {"Content-Length", integer_to_list(length(binary_to_list(BodyMap)))}
+                    ],
+
+                    % Content type
+                    "multipart/form-data",
+
+                    BodyMap
                 }
         end,
 
