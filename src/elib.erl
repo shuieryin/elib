@@ -867,7 +867,11 @@ has_function(Module, FuncName, TargetArity) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec http_request(UriBin :: binary(), BodyMap :: map(), get | post | file) -> map().
+-spec http_request(
+    UriBin :: binary(),
+    BodyMap :: map(),
+    Method :: get | post | {file, Headers :: list()}
+) -> map().
 http_request(UriBin, BodyMap, RawMethod) ->
     {Method, RequestParams} =
         case RawMethod of
@@ -899,7 +903,7 @@ http_request(UriBin, BodyMap, RawMethod) ->
                         []
                     }
                 };
-            file ->
+            {file, Headers} ->
                 {
                     post,
                     {
@@ -907,9 +911,7 @@ http_request(UriBin, BodyMap, RawMethod) ->
                         binary_to_list(UriBin),
 
                         % Headers
-                        [
-                            {"Content-Length", integer_to_list(length(binary_to_list(BodyMap)))}
-                        ],
+                        Headers,
 
                         % Content type
                         "multipart/form-data",
