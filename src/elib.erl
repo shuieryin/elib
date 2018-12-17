@@ -870,7 +870,7 @@ has_function(Module, FuncName, TargetArity) ->
 -spec http_request(
     UriBin :: binary(),
     BodyMap :: map(),
-    Method :: get | post | {file, Headers :: list()}
+    Method :: get | post | {file, Filename :: file:filename()}
 ) -> map().
 http_request(UriBin, BodyMap, RawMethod) ->
     {Method, RequestParams} =
@@ -903,7 +903,11 @@ http_request(UriBin, BodyMap, RawMethod) ->
                         []
                     }
                 };
-            {file, Headers} ->
+            {file, Filename} ->
+                Boundary = uuid_bin(),
+                ContentType = "multipart/form-data; boundary=" ++ binary_to_list(Boundary),
+                {ok, Data} = file:read_file(BodyMap),
+                RequestBody = format_multipart_formdata(Data, <<"media">>, [Filename], <<"application/octet-stream">>, Boundary),
                 {
                     post,
                     {
@@ -911,12 +915,12 @@ http_request(UriBin, BodyMap, RawMethod) ->
                         binary_to_list(UriBin),
 
                         % Headers
-                        Headers,
+                        [],
 
                         % Content type
-                        "multipart/form-data",
+                        ContentType,
 
-                        BodyMap
+                        RequestBody
                     }
                 }
         end,
@@ -1484,3 +1488,31 @@ hex(X) ->
             16#4545, 16#4546, 16#4630, 16#4631, 16#4632, 16#4633, 16#4634,
             16#4635, 16#4636, 16#4637, 16#4638, 16#4639, 16#4641, 16#4642,
             16#4643, 16#4644, 16#4645, 16#4646}).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Format multipart form data.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec format_multipart_formdata(Data, Name, FileNames, MimeType, Boundary) -> binary() when
+    Data :: binary(),
+    Name :: binary(),
+    FileNames :: list(),
+    MimeType :: binary(),
+    Boundary :: binary().
+format_multipart_formdata(Data, Name, FileNames, MimeType, Boundary) ->
+    StartBoundary = erlang:iolist_to_binary([<<"--">>, Boundary]),
+    LineSeparator = <<"\r\n">>,
+    WithPaths = lists:foldl(fun(FileName, Acc) ->
+        erlang:iolist_to_binary([
+            Acc,
+            StartBoundary, LineSeparator,
+            <<"Content-Disposition: form-data; name=\"">>, Name, <<"\"; filename=\"">>, FileName, <<"\"">>, LineSeparator,
+            <<"Content-Type: ">>, MimeType, LineSeparator, LineSeparator,
+            Data,
+            LineSeparator
+        ])
+                            end, <<>>, FileNames),
+    erlang:iolist_to_binary([WithPaths, StartBoundary, <<"--">>, LineSeparator]).
