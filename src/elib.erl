@@ -870,7 +870,7 @@ has_function(Module, FuncName, TargetArity) ->
 -spec http_request(
     UriBin :: binary(),
     BodyMap :: map(),
-    Method :: get | post | {file, Filename :: file:filename()}
+    Method :: get | post | file
 ) -> map().
 http_request(UriBin, BodyMap, RawMethod) ->
     {Method, RequestParams} =
