@@ -867,46 +867,55 @@ has_function(Module, FuncName, TargetArity) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec http_request(UriBin :: binary(), BodyMap :: map(), get | post) -> map().
-http_request(UriBin, BodyMap, Method) ->
-    RequestParams =
-        case Method of
+-spec http_request(UriBin :: binary(), BodyMap :: map(), get | post | file) -> map().
+http_request(UriBin, BodyMap, RawMethod) ->
+    {Method, RequestParams} =
+        case RawMethod of
             post ->
                 {
-                    % URI
-                    binary_to_list(UriBin),
+                    post,
+                    {
+                        % URI
+                        binary_to_list(UriBin),
 
-                    % Headers
-                    [],
+                        % Headers
+                        [],
 
-                    % Content type
-                    "raw",
+                        % Content type
+                        "raw",
 
-                    %Body
-                    jsx:encode(BodyMap)
+                        %Body
+                        jsx:encode(BodyMap)
+                    }
                 };
             get ->
                 {
-                    % URI
-                    binary_to_list(UriBin),
+                    get,
+                    {
+                        % URI
+                        binary_to_list(UriBin),
 
-                    % Headers
-                    []
+                        % Headers
+                        []
+                    }
                 };
             file ->
                 {
-                    % URI
-                    binary_to_list(UriBin),
+                    post,
+                    {
+                        % URI
+                        binary_to_list(UriBin),
 
-                    % Headers
-                    [
-                        {"Content-Length", integer_to_list(length(binary_to_list(BodyMap)))}
-                    ],
+                        % Headers
+                        [
+                            {"Content-Length", integer_to_list(length(binary_to_list(BodyMap)))}
+                        ],
 
-                    % Content type
-                    "multipart/form-data",
+                        % Content type
+                        "multipart/form-data",
 
-                    BodyMap
+                        BodyMap
+                    }
                 }
         end,
 
