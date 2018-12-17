@@ -903,9 +903,10 @@ http_request(UriBin, BodyMap, RawMethod) ->
                         []
                     }
                 };
-            {file, Filename} ->
+            file ->
                 Boundary = uuid_bin(),
                 ContentType = "multipart/form-data; boundary=" ++ binary_to_list(Boundary),
+                Filename = filename:basename(BodyMap),
                 {ok, Data} = file:read_file(BodyMap),
                 RequestBody = format_multipart_formdata(Data, <<"media">>, [Filename], <<"application/octet-stream">>, Boundary),
                 {
