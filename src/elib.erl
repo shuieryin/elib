@@ -63,6 +63,7 @@
     bin_to_hex/1,
     list_to_hex/1,
     flatten_obj/2,
+    timestamp_to_date/1,
     timestamp_to_date_bin/1,
     localtime_to_date_bin/1,
     timestamp_to_datetime_bin/1,
@@ -1098,19 +1099,29 @@ flatten_obj(_Obj, ValueList) ->
 
 %%--------------------------------------------------------------------
 %% @doc
+%% Convert timestamp to date.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec timestamp_to_date(Timestamp :: pos_integer()) -> calendar:datetime1970().
+timestamp_to_date(Timestamp) ->
+    case re:run(integer_to_binary(Timestamp), <<"^(\\d{4})(\\d{6})">>, [{capture, all, binary}]) of
+        nomatch ->
+            throw(io_lib:format("Invalid timestamp:~p", [Timestamp]));
+        {match, [_FieldValueBin, DatePart1, DatePart2]} ->
+            calendar:now_to_local_time({binary_to_integer(DatePart1), binary_to_integer(DatePart2), 0})
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
 %% Convert timestamp to YYYY/MM/DD.
 %%
 %% @end
 %%--------------------------------------------------------------------
 -spec timestamp_to_date_bin(Timestamp :: pos_integer()) -> binary().
 timestamp_to_date_bin(Timestamp) ->
-    case re:run(integer_to_binary(Timestamp), <<"^(\\d{4})(\\d{6})">>, [{capture, all, binary}]) of
-        nomatch ->
-            Timestamp;
-        {match, [_FieldValueBin, DatePart1, DatePart2]} ->
-            CurDate = calendar:now_to_local_time({binary_to_integer(DatePart1), binary_to_integer(DatePart2), 0}),
-            localtime_to_date_bin(CurDate)
-    end.
+    localtime_to_date_bin(timestamp_to_date(Timestamp)).
 
 
 %%--------------------------------------------------------------------
@@ -1121,13 +1132,7 @@ timestamp_to_date_bin(Timestamp) ->
 %%--------------------------------------------------------------------
 -spec timestamp_to_date_bin_short(Timestamp :: pos_integer()) -> binary().
 timestamp_to_date_bin_short(Timestamp) ->
-    case re:run(integer_to_binary(Timestamp), <<"^(\\d{4})(\\d{6})">>, [{capture, all, binary}]) of
-        nomatch ->
-            Timestamp;
-        {match, [_FieldValueBin, DatePart1, DatePart2]} ->
-            CurDate = calendar:now_to_local_time({binary_to_integer(DatePart1), binary_to_integer(DatePart2), 0}),
-            localtime_to_date_bin_short(CurDate)
-    end.
+    localtime_to_date_bin_short(timestamp_to_date(Timestamp)).
 
 
 %%--------------------------------------------------------------------
@@ -1162,13 +1167,7 @@ localtime_to_date_bin(CurDate) ->
 %%--------------------------------------------------------------------
 -spec timestamp_to_datetime_bin(Timestamp :: pos_integer()) -> binary().
 timestamp_to_datetime_bin(Timestamp) ->
-    case re:run(integer_to_binary(Timestamp), <<"^(\\d{4})(\\d{6})">>, [{capture, all, binary}]) of
-        nomatch ->
-            Timestamp;
-        {match, [_FieldValueBin, DatePart1, DatePart2]} ->
-            CurDate = calendar:now_to_local_time({binary_to_integer(DatePart1), binary_to_integer(DatePart2), 0}),
-            localtime_to_datetime_bin(CurDate)
-    end.
+    localtime_to_datetime_bin(timestamp_to_date(Timestamp)).
 
 
 %%--------------------------------------------------------------------
