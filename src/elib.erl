@@ -1103,7 +1103,7 @@ flatten_obj(_Obj, ValueList) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec timestamp_to_date(Timestamp :: pos_integer()) -> calendar:datetime1970().
+-spec timestamp_to_date(Timestamp :: pos_integer()) -> calendar:datetime().
 timestamp_to_date(Timestamp) ->
     case re:run(integer_to_binary(Timestamp), <<"^(\\d{4})(\\d{6})">>, [{capture, all, binary}]) of
         nomatch ->
