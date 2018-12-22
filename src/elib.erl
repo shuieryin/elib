@@ -70,7 +70,8 @@
     localtime_to_datetime_bin/1,
     local_datetime_to_timestamp/1,
     timestamp_to_date_bin_short/1,
-    localtime_to_date_bin_short/1
+    localtime_to_date_bin_short/1,
+    is_punctuation/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -1192,6 +1193,35 @@ localtime_to_datetime_bin(CurDate) ->
 local_datetime_to_timestamp(InputDatetime) ->
     [GregorianDateTime] = calendar:local_time_to_universal_time_dst(InputDatetime),
     calendar:datetime_to_gregorian_seconds(GregorianDateTime) - 62167219200.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Check ascii code is punctuation.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec is_punctuation(AsciiCode :: pos_integer(), ExceptionList :: [pos_integer()]) -> boolean().
+is_punctuation(AsciiCode, ExceptionList) ->
+    IsExclude = lists:member(AsciiCode, ExceptionList),
+    if
+        IsExclude ->
+            false;
+        (AsciiCode >= 32 andalso AsciiCode =< 47) orelse
+            (AsciiCode >= 58 andalso AsciiCode =< 64) orelse
+            (AsciiCode >= 91 andalso AsciiCode =< 96) orelse
+            (AsciiCode >= 123 andalso AsciiCode =< 126) orelse
+            (AsciiCode >= 8208 andalso AsciiCode =< 8286) orelse
+            (AsciiCode >= 12289 andalso AsciiCode =< 12341) orelse
+            (AsciiCode >= 65072 andalso AsciiCode =< 65131) orelse
+            (AsciiCode >= 65281 andalso AsciiCode =< 65295) orelse
+            (AsciiCode >= 65306 andalso AsciiCode =< 65312) orelse
+            (AsciiCode >= 65339 andalso AsciiCode =< 65344) orelse
+            (AsciiCode >= 65371 andalso AsciiCode =< 65381) ->
+            true;
+        true ->
+            false
+    end.
 
 
 %%%===================================================================
