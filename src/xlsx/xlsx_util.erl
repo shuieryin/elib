@@ -100,7 +100,7 @@ get_output_stream(X = #xlsx{tmp = Tmp, files = Files}, RelPath) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec write(X :: #xlsx{}, RefPath :: file:filename_all(), Bytes :: [[byte()]]) -> {ok, X :: #xlsx{}}.
+-spec write(X :: #xlsx{}, RefPath :: file:filename_all(), Bytes :: [iodata()]) -> {ok, X :: #xlsx{}}.
 write(X, RelPath, Bytes) ->
     {ok, {F, X2}} = get_output_stream(X, RelPath),
     ok = file:write(F, Bytes),
