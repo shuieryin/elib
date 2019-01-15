@@ -27,7 +27,6 @@ create(Sheets, OutFile) ->
         fun({Idx, {_Name, Rows}}, {ok, Acc, AccSharedStrings}) ->
             I = integer_to_list(Idx),
             {SheetData, UpdatedAccSharedStrings} = xlsx_sheet:encode_sheet(Rows, AccSharedStrings),
-            error_logger:info_msg("check point 4 ~p~n", SheetData),
 
             {ok, AccXlsx} = xlsx_util:write(Acc, "xl/worksheets/sheet" ++ I ++ ".xml", SheetData),
             {ok, AccXlsx, UpdatedAccSharedStrings}
