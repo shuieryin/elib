@@ -871,7 +871,7 @@ has_function(Module, FuncName, TargetArity) ->
 %%--------------------------------------------------------------------
 -spec http_request(
     UriBin :: binary(),
-    BodyMap :: map(),
+    BodyMap :: map() | binary(),
     Method :: get | post | file
 ) -> map().
 http_request(UriBin, BodyMap, RawMethod) ->
@@ -891,7 +891,12 @@ http_request(UriBin, BodyMap, RawMethod) ->
                         "raw",
 
                         %Body
-                        jsx:encode(BodyMap)
+                        case is_map(BodyMap) of
+                            true ->
+                                jsx:encode(BodyMap);
+                            false ->
+                                BodyMap
+                        end
                     }
                 };
             get ->
