@@ -1109,14 +1109,10 @@ flatten_obj(_Obj, ValueList) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec timestamp_to_date(Timestamp :: pos_integer()) -> calendar:datetime().
+-spec timestamp_to_date(Timestamp :: integer()) -> calendar:datetime().
 timestamp_to_date(Timestamp) ->
-    case re:run(integer_to_binary(Timestamp), <<"^(\\d{4})(\\d{6})">>, [{capture, all, binary}]) of
-        nomatch ->
-            throw(io_lib:format("Invalid timestamp:~p", [Timestamp]));
-        {match, [_FieldValueBin, DatePart1, DatePart2]} ->
-            calendar:now_to_local_time({binary_to_integer(DatePart1), binary_to_integer(DatePart2), 0})
-    end.
+    PlusLocalSeconds = abs(elib:local_datetime_to_timestamp({{1970,01,01}, {0,0,0}})),
+    calendar:gregorian_seconds_to_datetime(Timestamp + PlusLocalSeconds + 62167219200).
 
 
 %%--------------------------------------------------------------------
