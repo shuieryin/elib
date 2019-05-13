@@ -34,6 +34,7 @@
     strings_to_atoms/1,
     binaries_to_atoms/1,
     update_record_value/3,
+    update_record_value/4,
     f2i/2,
     to_binary/1,
     app_name/0,
@@ -76,6 +77,8 @@
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
+-type record_info() :: [atom()].
+-type record_infos() :: #{atom() => record_info()}.
 
 -define(H(X), (hex(X)):16).
 
@@ -474,6 +477,24 @@ binaries_to_atoms(StringList) ->
 update_record_value(RecordFieldNames, Record, NewValueBindings) ->
     [RecordName | ExistingDataList] = tuple_to_list(Record),
     UpdatedDataList = do_update_record_value(RecordFieldNames, ExistingDataList, NewValueBindings, []),
+    list_to_tuple([RecordName | UpdatedDataList]).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Deep update record values.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec update_record_value(RecordFieldNames, Record, NewValueBindings, RecordInfos) -> UpdatedRecord when
+    RecordFieldNames :: [atom()], % generic atom
+    Record :: tuple(), % generic tuple
+    NewValueBindings :: erl_eval:bindings(),
+    RecordInfos :: record_infos(),
+    UpdatedRecord :: Record.
+update_record_value(RecordFieldNames, Record, NewValueBindings, RecordInfos) ->
+    [RecordName | ExistingDataList] = tuple_to_list(Record),
+    UpdatedDataList = do_update_record_value(RecordFieldNames, ExistingDataList, NewValueBindings, [], RecordInfos),
     list_to_tuple([RecordName | UpdatedDataList]).
 
 
@@ -1125,7 +1146,7 @@ flatten_obj(_Obj, ValueList) ->
 %%--------------------------------------------------------------------
 -spec timestamp_to_date(Timestamp :: integer()) -> calendar:datetime().
 timestamp_to_date(Timestamp) ->
-    PlusLocalSeconds = abs(elib:local_datetime_to_timestamp({{1970,01,01}, {0,0,0}})),
+    PlusLocalSeconds = abs(elib:local_datetime_to_timestamp({{1970, 01, 01}, {0, 0, 0}})),
     calendar:gregorian_seconds_to_datetime(Timestamp + PlusLocalSeconds + 62167219200).
 
 
@@ -1323,6 +1344,8 @@ index_of(Item, [_NotMatchItem | Tail], Pos) ->
     NewValueBindings :: erl_eval:bindings(),
     AccDataList :: ExistingDataList,
     UpdatedDataList :: AccDataList.
+do_update_record_value(_RecordFieldNames, RestDataList, [], UpdatedDataList) ->
+    lists:reverse(UpdatedDataList) ++ RestDataList;
 do_update_record_value([FieldName | RestRecordFieldNames], [ExistingFieldValue | RestDataList], NewValueBindings, AccDataList) ->
     {UpdatedNewValueBindings, NewFieldValue}
         = case erl_eval:binding(FieldName, NewValueBindings) of
@@ -1332,10 +1355,129 @@ do_update_record_value([FieldName | RestRecordFieldNames], [ExistingFieldValue |
                   {NewValueBindings, ExistingFieldValue}
           end,
     do_update_record_value(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList]);
-do_update_record_value(_RecordFieldNames, RestDataList, [], UpdatedDataList) ->
-    lists:reverse(UpdatedDataList) ++ RestDataList;
 do_update_record_value([], [], _NewValueBingdings, UpdatedDataList) ->
     lists:reverse(UpdatedDataList).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Implementation function for updated_record_value/4.
+%% @see updated_record_value/4.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec do_update_record_value(RecordFieldNames, ExistingDataList, NewValueBindings, AccDataList, RecordInfos) -> UpdatedDataList when
+    RecordFieldNames :: [atom()], % generic atom
+    ExistingDataList :: [term()], % generic term
+    NewValueBindings :: erl_eval:bindings(),
+    AccDataList :: ExistingDataList,
+    RecordInfos :: record_infos(),
+    UpdatedDataList :: AccDataList.
+do_update_record_value(_RecordFieldNames, RestDataList, [], UpdatedDataList, _RecordInfos) ->
+    lists:reverse(UpdatedDataList) ++ RestDataList;
+do_update_record_value([FieldName | RestRecordFieldNames], [ExistingFieldValue | RestDataList], NewValueBindings, AccDataList, RecordInfos) ->
+    {UpdatedNewValueBindings, NewFieldValue}
+        = case erl_eval:binding(FieldName, NewValueBindings) of
+              {value, RawBindingValue} ->
+                  IsString = io_lib:char_list(RawBindingValue),
+                  BindingValue =
+                      if
+                          is_map(RawBindingValue) ->
+                              update_record_value_for_map(RawBindingValue, RecordInfos);
+                          is_tuple(RawBindingValue) ->
+                              update_record_value_for_tuple(RawBindingValue, RecordInfos);
+                          IsString ->
+                              RawBindingValue;
+                          is_list(RawBindingValue) ->
+                              update_record_value_for_list(RawBindingValue, RecordInfos);
+                          true ->
+                              RawBindingValue
+                      end,
+                  {erl_eval:del_binding(FieldName, NewValueBindings), BindingValue};
+              unbound ->
+                  {NewValueBindings, ExistingFieldValue}
+          end,
+    do_update_record_value(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList]);
+do_update_record_value([], [], _NewValueBingdings, UpdatedDataList, _RecordInfos) ->
+    lists:reverse(UpdatedDataList).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Update record value for map
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec update_record_value_for_map(map(), record_infos()) -> map().
+update_record_value_for_map(MapValue, RecordInfos) ->
+    maps:fold(
+        fun(FieldName, FieldValue, AccMap) ->
+            IsString = io_lib:char_list(FieldValue),
+            if
+                is_map(FieldValue) ->
+                    AccMap#{
+                        FieldName => update_record_value_for_map(FieldValue, RecordInfos)
+                    };
+                is_tuple(FieldValue) ->
+                    AccMap#{
+                        FieldName => update_record_value_for_tuple(FieldValue, RecordInfos)
+                    };
+                IsString ->
+                    AccMap#{
+                        FieldName => FieldValue
+                    };
+                is_list(FieldValue) ->
+                    AccMap#{
+                        FieldName => update_record_value_for_list(FieldValue, RecordInfos)
+                    };
+                true ->
+                    AccMap#{
+                        FieldName => FieldValue
+                    }
+            end
+        end,
+        #{},
+        MapValue
+    ).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Update record value for list
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec update_record_value_for_list(list(), record_infos()) -> list().
+update_record_value_for_list(ListValue, RecordInfos) ->
+    [
+        begin
+            IsString = io_lib:char_list(Element),
+            if
+                is_map(Element) ->
+                    update_record_value_for_map(Element, RecordInfos);
+                is_tuple(Element) ->
+                    update_record_value_for_tuple(Element, RecordInfos);
+                IsString ->
+                    Element;
+                is_list(Element) ->
+                    update_record_value_for_list(Element, RecordInfos);
+                true ->
+                    Element
+            end
+        end
+        || Element <- ListValue
+    ].
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Update record value for tuple
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec update_record_value_for_tuple(tuple(), record_infos()) -> tuple().
+update_record_value_for_tuple(TupleValue, RecordInfos) ->
+    list_to_tuple(update_record_value_for_list(tuple_to_list(TupleValue), RecordInfos)).
 
 
 %%--------------------------------------------------------------------
