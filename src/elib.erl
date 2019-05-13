@@ -1415,7 +1415,7 @@ do_update_record_value([FieldName | RestRecordFieldNames], [ExistingFieldValue |
               unbound ->
                   {NewValueBindings, ExistingFieldValue}
           end,
-    do_update_record_value(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList]);
+    do_update_record_value(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList], RecordInfos);
 do_update_record_value([], [], _NewValueBingdings, UpdatedDataList, _RecordInfos) ->
     lists:reverse(UpdatedDataList).
 
