@@ -1379,19 +1379,37 @@ do_update_record_value([FieldName | RestRecordFieldNames], [ExistingFieldValue |
     {UpdatedNewValueBindings, NewFieldValue}
         = case erl_eval:binding(FieldName, NewValueBindings) of
               {value, RawBindingValue} ->
-                  IsString = io_lib:char_list(RawBindingValue),
-                  BindingValue =
+                  BindingRecord =
                       if
-                          is_map(RawBindingValue) ->
-                              update_record_value_for_map(RawBindingValue, RecordInfos);
-                          is_tuple(RawBindingValue) ->
-                              update_record_value_for_tuple(RawBindingValue, RecordInfos);
-                          IsString ->
-                              RawBindingValue;
-                          is_list(RawBindingValue) ->
-                              update_record_value_for_list(RawBindingValue, RecordInfos);
+                          is_tuple(ExistingFieldValue) andalso is_list(RawBindingValue) ->
+                              [PotentialRecordName | _RestValues] = tuple_to_list(ExistingFieldValue),
+                              case maps:get(PotentialRecordName, RecordInfos, undefined) of
+                                  undefined ->
+                                      undefined;
+                                  RecordInfo ->
+                                      update_record_value(RecordInfo, ExistingFieldValue, RawBindingValue, RecordInfos)
+                              end;
                           true ->
-                              RawBindingValue
+                              undefined
+                      end,
+                  BindingValue =
+                      case BindingRecord of
+                          undefined ->
+                              IsString = io_lib:char_list(RawBindingValue),
+                              if
+                                  is_map(RawBindingValue) ->
+                                      update_record_value_for_map(RawBindingValue, RecordInfos);
+                                  is_tuple(RawBindingValue) ->
+                                      update_record_value_for_tuple(RawBindingValue, RecordInfos);
+                                  IsString ->
+                                      RawBindingValue;
+                                  is_list(RawBindingValue) ->
+                                      update_record_value_for_list(RawBindingValue, RecordInfos);
+                                  true ->
+                                      RawBindingValue
+                              end;
+                          BindingRecord ->
+                              BindingRecord
                       end,
                   {erl_eval:del_binding(FieldName, NewValueBindings), BindingValue};
               unbound ->
