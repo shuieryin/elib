@@ -71,7 +71,8 @@
     local_datetime_to_timestamp/1,
     timestamp_to_date_bin_short/1,
     localtime_to_date_bin_short/1,
-    is_punctuation/2
+    is_punctuation/2,
+    timestamp_milli/0
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -133,15 +134,28 @@ type_of(_X) -> unknown.
 
 %%--------------------------------------------------------------------
 %% @doc
-%% Return timestamp in milliseconds.
+%% Return timestamp in seconds.
 %%
 %% @end
 %%--------------------------------------------------------------------
 -spec timestamp() -> Timestamp when
     Timestamp :: pos_integer(). % generic integer
 timestamp() ->
-    {Hour, Minute, _Second} = os:timestamp(),
-    Hour * 1000000 + Minute.
+    {MegaSecs, Secs, _MicroSecs} = os:timestamp(),
+    MegaSecs * 1000000 + Secs.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Return timestamp in milliseconds.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec timestamp_milli() -> Timestamp when
+    Timestamp :: pos_integer(). % generic integer
+timestamp_milli() ->
+    {MegaSecs, Secs, MicroSecs} = os:timestamp(),
+    MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000.
 
 
 %%--------------------------------------------------------------------
