@@ -34,7 +34,6 @@
     strings_to_atoms/1,
     binaries_to_atoms/1,
     update_record_value/3,
-    update_record_value/4,
     f2i/2,
     to_binary/1,
     app_name/0,
@@ -73,7 +72,8 @@
     timestamp_to_date_bin_short/1,
     localtime_to_date_bin_short/1,
     is_punctuation/2,
-    timestamp_milli/0
+    timestamp_milli/0,
+    deep_merge_data/3
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -477,24 +477,6 @@ binaries_to_atoms(StringList) ->
 update_record_value(RecordFieldNames, Record, NewValueBindings) ->
     [RecordName | ExistingDataList] = tuple_to_list(Record),
     UpdatedDataList = do_update_record_value(RecordFieldNames, ExistingDataList, NewValueBindings, []),
-    list_to_tuple([RecordName | UpdatedDataList]).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Deep update record values.
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec update_record_value(RecordFieldNames, Record, NewValueBindings, RecordInfos) -> UpdatedRecord when
-    RecordFieldNames :: [atom()], % generic atom
-    Record :: tuple(), % generic tuple
-    NewValueBindings :: erl_eval:bindings(),
-    RecordInfos :: record_infos(),
-    UpdatedRecord :: Record.
-update_record_value(RecordFieldNames, Record, NewValueBindings, RecordInfos) ->
-    [RecordName | ExistingDataList] = tuple_to_list(Record),
-    UpdatedDataList = do_update_record_value(RecordFieldNames, ExistingDataList, NewValueBindings, [], RecordInfos),
     list_to_tuple([RecordName | UpdatedDataList]).
 
 
@@ -1260,6 +1242,66 @@ is_punctuation(AsciiCode, ExceptionList) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Deep merge data
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec deep_merge_data(term(), term(), record_infos()) -> term().
+deep_merge_data(Source, Target, RecordInfos) ->
+    IsString = io_lib:char_list(Target),
+    if
+        is_map(Source) andalso is_map(Target) ->
+            maps:fold(
+                fun(Key, ValueTBU, AccSource) ->
+                    case ValueTBU of
+                        remove_item ->
+                            maps:remove(Key, AccSource);
+                        ValueTBU ->
+                            case maps:get(Key, AccSource, undefined) of
+                                undefined ->
+                                    AccSource#{
+                                        Key => ValueTBU
+                                    };
+                                MapSource ->
+                                    AccSource#{
+                                        Key := deep_merge_data(MapSource, ValueTBU, RecordInfos)
+                                    }
+                            end
+                    end
+                end,
+                Source,
+                Target
+            );
+        is_tuple(Source) andalso is_tuple(Target) ->
+            case Target of
+                {update_record, RecordName, RecordValuesTBU} ->
+                    case maps:get(RecordName, RecordInfos, undefined) of
+                        undefined ->
+                            Source;
+                        TargetRecordInfo ->
+                            deep_merge_data_for_record(TargetRecordInfo, Source, RecordValuesTBU, RecordInfos)
+                    end;
+                Target ->
+                    SourceList = tuple_to_list(Source),
+                    TargetList = tuple_to_list(Target),
+                    if
+                        length(SourceList) == length(TargetList) ->
+                            list_to_tuple(deep_merge_data_for_list(SourceList, TargetList, RecordInfos, []));
+                        true ->
+                            Target
+                    end
+            end;
+        IsString ->
+            Target;
+        is_list(Source) andalso is_list(Target) ->
+            list_to_tuple(deep_merge_data_for_list(Source, Target, RecordInfos, []));
+        true ->
+            Target
+    end.
+
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -1357,145 +1399,6 @@ do_update_record_value([FieldName | RestRecordFieldNames], [ExistingFieldValue |
     do_update_record_value(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList]);
 do_update_record_value([], [], _NewValueBingdings, UpdatedDataList) ->
     lists:reverse(UpdatedDataList).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Implementation function for updated_record_value/4.
-%% @see updated_record_value/4.
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec do_update_record_value(RecordFieldNames, ExistingDataList, NewValueBindings, AccDataList, RecordInfos) -> UpdatedDataList when
-    RecordFieldNames :: [atom()], % generic atom
-    ExistingDataList :: [term()], % generic term
-    NewValueBindings :: erl_eval:bindings(),
-    AccDataList :: ExistingDataList,
-    RecordInfos :: record_infos(),
-    UpdatedDataList :: AccDataList.
-do_update_record_value(_RecordFieldNames, RestDataList, [], UpdatedDataList, _RecordInfos) ->
-    lists:reverse(UpdatedDataList) ++ RestDataList;
-do_update_record_value([FieldName | RestRecordFieldNames], [ExistingFieldValue | RestDataList], NewValueBindings, AccDataList, RecordInfos) ->
-    {UpdatedNewValueBindings, NewFieldValue}
-        = case erl_eval:binding(FieldName, NewValueBindings) of
-              {value, RawBindingValue} ->
-                  BindingRecord =
-                      if
-                          is_tuple(ExistingFieldValue) andalso is_list(RawBindingValue) ->
-                              [PotentialRecordName | _RestValues] = tuple_to_list(ExistingFieldValue),
-                              case maps:get(PotentialRecordName, RecordInfos, undefined) of
-                                  undefined ->
-                                      undefined;
-                                  RecordInfo ->
-                                      update_record_value(RecordInfo, ExistingFieldValue, RawBindingValue, RecordInfos)
-                              end;
-                          true ->
-                              undefined
-                      end,
-                  BindingValue =
-                      case BindingRecord of
-                          undefined ->
-                              IsString = io_lib:char_list(RawBindingValue),
-                              if
-                                  is_map(RawBindingValue) ->
-                                      update_record_value_for_map(RawBindingValue, RecordInfos);
-                                  is_tuple(RawBindingValue) ->
-                                      update_record_value_for_tuple(RawBindingValue, RecordInfos);
-                                  IsString ->
-                                      RawBindingValue;
-                                  is_list(RawBindingValue) ->
-                                      update_record_value_for_list(RawBindingValue, RecordInfos);
-                                  true ->
-                                      RawBindingValue
-                              end;
-                          BindingRecord ->
-                              BindingRecord
-                      end,
-                  {erl_eval:del_binding(FieldName, NewValueBindings), BindingValue};
-              unbound ->
-                  {NewValueBindings, ExistingFieldValue}
-          end,
-    do_update_record_value(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList], RecordInfos);
-do_update_record_value([], [], _NewValueBingdings, UpdatedDataList, _RecordInfos) ->
-    lists:reverse(UpdatedDataList).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Update record value for map
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec update_record_value_for_map(map(), record_infos()) -> map().
-update_record_value_for_map(MapValue, RecordInfos) ->
-    maps:fold(
-        fun(FieldName, FieldValue, AccMap) ->
-            IsString = io_lib:char_list(FieldValue),
-            if
-                is_map(FieldValue) ->
-                    AccMap#{
-                        FieldName => update_record_value_for_map(FieldValue, RecordInfos)
-                    };
-                is_tuple(FieldValue) ->
-                    AccMap#{
-                        FieldName => update_record_value_for_tuple(FieldValue, RecordInfos)
-                    };
-                IsString ->
-                    AccMap#{
-                        FieldName => FieldValue
-                    };
-                is_list(FieldValue) ->
-                    AccMap#{
-                        FieldName => update_record_value_for_list(FieldValue, RecordInfos)
-                    };
-                true ->
-                    AccMap#{
-                        FieldName => FieldValue
-                    }
-            end
-        end,
-        #{},
-        MapValue
-    ).
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Update record value for list
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec update_record_value_for_list(list(), record_infos()) -> list().
-update_record_value_for_list(ListValue, RecordInfos) ->
-    [
-        begin
-            IsString = io_lib:char_list(Element),
-            if
-                is_map(Element) ->
-                    update_record_value_for_map(Element, RecordInfos);
-                is_tuple(Element) ->
-                    update_record_value_for_tuple(Element, RecordInfos);
-                IsString ->
-                    Element;
-                is_list(Element) ->
-                    update_record_value_for_list(Element, RecordInfos);
-                true ->
-                    Element
-            end
-        end
-        || Element <- ListValue
-    ].
-
-
-%%--------------------------------------------------------------------
-%% @doc
-%% Update record value for tuple
-%%
-%% @end
-%%--------------------------------------------------------------------
--spec update_record_value_for_tuple(tuple(), record_infos()) -> tuple().
-update_record_value_for_tuple(TupleValue, RecordInfos) ->
-    list_to_tuple(update_record_value_for_list(tuple_to_list(TupleValue), RecordInfos)).
 
 
 %%--------------------------------------------------------------------
@@ -1721,3 +1624,64 @@ format_multipart_formdata(Data, Name, FileNames, MimeType, Boundary) ->
         ])
                             end, <<>>, FileNames),
     erlang:iolist_to_binary([WithPaths, StartBoundary, <<"--">>, LineSeparator]).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Deep merge data for list
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec deep_merge_data_for_list(list(), list(), record_infos(), list()) -> list().
+deep_merge_data_for_list([], [], _RecordInfos, AccMergedList) ->
+    lists:reverse(AccMergedList);
+deep_merge_data_for_list([SourceItem | RestSourceItems], [TargetItem | RestTargetItems], RecordInfos, AccMergedList) ->
+    MergedItem = deep_merge_data(SourceItem, TargetItem, RecordInfos),
+    deep_merge_data_for_list(RestSourceItems, RestTargetItems, RecordInfos, [MergedItem | AccMergedList]).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Deep merge data for record
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec deep_merge_data_for_record(RecordFieldNames, Record, NewValueBindings, RecordInfos) -> UpdatedRecord when
+    RecordFieldNames :: [atom()], % generic atom
+    Record :: tuple(), % generic tuple
+    NewValueBindings :: erl_eval:bindings(),
+    RecordInfos :: record_infos(),
+    UpdatedRecord :: Record.
+deep_merge_data_for_record(RecordFieldNames, Record, NewValueBindings, RecordInfos) ->
+    [RecordName | ExistingDataList] = tuple_to_list(Record),
+    UpdatedDataList = do_deep_merge_data_for_record(RecordFieldNames, ExistingDataList, NewValueBindings, [], RecordInfos),
+    list_to_tuple([RecordName | UpdatedDataList]).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Do deep merge data for record
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec do_deep_merge_data_for_record(RecordFieldNames, ExistingDataList, NewValueBindings, AccDataList, RecordInfos) -> UpdatedDataList when
+    RecordFieldNames :: [atom()], % generic atom
+    ExistingDataList :: [term()], % generic term
+    NewValueBindings :: erl_eval:bindings(),
+    AccDataList :: ExistingDataList,
+    RecordInfos :: record_infos(),
+    UpdatedDataList :: AccDataList.
+do_deep_merge_data_for_record(_RecordFieldNames, RestDataList, [], UpdatedDataList, _RecordInfos) ->
+    lists:reverse(UpdatedDataList) ++ RestDataList;
+do_deep_merge_data_for_record([FieldName | RestRecordFieldNames], [ExistingFieldValue | RestDataList], NewValueBindings, AccDataList, RecordInfos) ->
+    {UpdatedNewValueBindings, NewFieldValue}
+        = case erl_eval:binding(FieldName, NewValueBindings) of
+              {value, RawBindingValue} ->
+                  BindingValue = deep_merge_data(ExistingFieldValue, RawBindingValue, RecordInfos),
+                  {erl_eval:del_binding(FieldName, NewValueBindings), BindingValue};
+              unbound ->
+                  {NewValueBindings, ExistingFieldValue}
+          end,
+    do_deep_merge_data_for_record(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList], RecordInfos);
+do_deep_merge_data_for_record([], [], _NewValueBingdings, UpdatedDataList, _RecordInfos) ->
+    lists:reverse(UpdatedDataList).
