@@ -1296,7 +1296,7 @@ deep_merge_data(Source, Target, RecordInfos) ->
         IsString ->
             Target;
         is_list(Source) andalso is_list(Target) ->
-            list_to_tuple(deep_merge_data_for_list(Source, Target, RecordInfos, []));
+            deep_merge_data_for_list(Source, Target, RecordInfos, []);
         true ->
             Target
     end.
