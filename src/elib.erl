@@ -1256,7 +1256,7 @@ deep_merge_data(Source, Target, RecordInfos) ->
             maps:fold(
                 fun(Key, ValueTBU, AccSource) ->
                     case ValueTBU of
-                        remove_item ->
+                        remove_record ->
                             maps:remove(Key, AccSource);
                         ValueTBU ->
                             case maps:get(Key, AccSource, undefined) of
