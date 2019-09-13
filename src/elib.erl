@@ -73,7 +73,8 @@
     localtime_to_date_bin_short/1,
     is_punctuation/2,
     timestamp_milli/0,
-    deep_merge_data/3
+    deep_merge_data/3,
+    mapreduce/1
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -1302,6 +1303,27 @@ deep_merge_data(Source, Target, RecordInfos) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% F1(Pid, X) -> sends {Keys,Val} messages to Pid
+%% F2(Key, [Val], AccIn) -> AccOut
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec mapreduce(#{Key :: term() => fun()}) -> map().
+mapreduce(Payloads) ->
+    S = self(),
+    Pid = spawn(
+        fun() ->
+            reduce(S, Payloads)
+        end
+    ),
+    receive
+        {Pid, Result} ->
+            Result
+    end.
+
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -1685,3 +1707,55 @@ do_deep_merge_data_for_record([FieldName | RestRecordFieldNames], [ExistingField
     do_deep_merge_data_for_record(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList], RecordInfos);
 do_deep_merge_data_for_record([], [], _NewValueBingdings, UpdatedDataList, _RecordInfos) ->
     lists:reverse(UpdatedDataList).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Do Calculate concurrent results using mapreduce in new process.
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec reduce(pid(), Payloads :: #{Key :: term() => fun()}) -> ok.
+reduce(ParentPid, Payloads) ->
+    process_flag(trap_exit, true),
+    ReducePid = self(),
+    %% Create the Map processes one for each element X in L
+    ok = maps:fold(
+        fun(Key, Func, ok) ->
+            spawn_link(
+                fun() ->
+                    %% must send {Key, Value} messages to Pid and then terminate
+                    ReducePid ! {Key, apply(Func, [])}
+                end
+            ),
+            ok
+        end,
+        ok,
+        Payloads
+    ),
+    %% Wait for N Map processes to terminate
+    Map1 = collect_replies(gb_sets:from_list(maps:keys(Payloads)), #{}),
+    ParentPid ! {ReducePid, Map1},
+    ok.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% collect_replies(N, Map) collect and merge {Key, Value} messages from N processese
+%%      When N processes have teminated return a {Key, [Value]} tuple
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec collect_replies(gb_sets:set(term()), map()) -> map().
+collect_replies(Keys, Map) ->
+    case gb_sets:size(Keys) of
+        0 ->
+            Map;
+        _NotFinished ->
+            receive
+                {Key, Val} ->
+                    collect_replies(gb_sets:del_element(Key, Keys), Map#{
+                        Key => Val
+                    })
+            end
+    end.
