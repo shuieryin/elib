@@ -1298,8 +1298,27 @@ deep_merge_data(Source, Target, RecordInfos) ->
             Target;
         is_list(Source) andalso is_list(Target) ->
             deep_merge_data_for_list(Source, Target, RecordInfos, []);
+        is_list(Source) andalso is_tuple(Target) ->
+            case Target of
+                {list_add_element, Value} ->
+                    [Value | Source];
+                {list_del_element, Value} ->
+                    lists:filter(
+                        fun(Elem) ->
+                            Elem /= Value
+                        end,
+                        Source
+                    );
+                _Other ->
+                    deep_merge_data_for_list(Source, Target, RecordInfos, [])
+            end;
         true ->
-            Target
+            case Target of
+                {list_add_element, Value} ->
+                    [Value];
+                _Other ->
+                    Target
+            end
     end.
 
 
