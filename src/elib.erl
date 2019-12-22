@@ -1310,7 +1310,7 @@ deep_merge_data(Source, Target, RecordInfos) ->
                         Source
                     );
                 _Other ->
-                    deep_merge_data_for_list(Source, Target, RecordInfos, [])
+                    deep_merge_data_for_list(Source, tuple_to_list(Target), RecordInfos, [])
             end;
         true ->
             case Target of
