@@ -1716,11 +1716,11 @@ do_deep_merge_data_for_record(_RecordFieldNames, RestDataList, [], UpdatedDataLi
     lists:reverse(UpdatedDataList) ++ RestDataList;
 do_deep_merge_data_for_record([FieldName | RestRecordFieldNames], [ExistingFieldValue | RestDataList], NewValueBindings, AccDataList, RecordInfos) ->
     {UpdatedNewValueBindings, NewFieldValue}
-        = case erl_eval:binding(FieldName, NewValueBindings) of
-              {value, RawBindingValue} ->
+        = case lists:keyfind(FieldName, 1, NewValueBindings) of
+              {FieldName, RawBindingValue} ->
                   BindingValue = deep_merge_data(ExistingFieldValue, RawBindingValue, RecordInfos),
                   {erl_eval:del_binding(FieldName, NewValueBindings), BindingValue};
-              unbound ->
+              false ->
                   {NewValueBindings, ExistingFieldValue}
           end,
     do_deep_merge_data_for_record(RestRecordFieldNames, RestDataList, UpdatedNewValueBindings, [NewFieldValue | AccDataList], RecordInfos);
