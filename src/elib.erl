@@ -74,7 +74,11 @@
     is_punctuation/2,
     timestamp_milli/0,
     deep_merge_data/3,
-    mapreduce/1
+    mapreduce/1,
+    record_to_map/3,
+    map_to_record/3,
+    record_to_map_map/2,
+    map_to_record_map/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
@@ -1343,6 +1347,136 @@ mapreduce(Payloads) ->
     end.
 
 
+%%--------------------------------------------------------------------
+%% @doc
+%% Record to map
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec record_to_map(record_info(), tuple(), static_record_infos()) -> map().
+record_to_map(RecordInfo, Record, StaticRecordInfos) ->
+    [RecordName | RecordValues] = tuple_to_list(Record),
+    RecordMap = record_to_map(RecordInfo, RecordValues, #{}, StaticRecordInfos),
+    RecordMap#{
+        record_name => RecordName
+    }.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Map to record
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec map_to_record(record_info(), map(), static_record_infos()) -> tuple().
+map_to_record(RecordInfo, #{
+    record_name := RecordName
+} = MapValue, StaticRecordInfos) ->
+    TupleList = lists:foldr(
+        fun(FieldName, AccRecordList) ->
+            FieldValue = maps:get(FieldName, MapValue, undefined),
+            IsString = io_lib:char_list(FieldValue),
+            [if
+                 is_map(FieldValue) ->
+                     map_to_record_map(FieldValue, StaticRecordInfos);
+                 is_tuple(FieldValue) ->
+                     map_to_record_tuple(FieldValue, StaticRecordInfos);
+                 IsString ->
+                     FieldValue;
+                 is_list(FieldValue) ->
+                     map_to_record_list(FieldValue, StaticRecordInfos);
+                 true ->
+                     FieldValue
+             end | AccRecordList]
+        end,
+        [],
+        RecordInfo
+    ),
+    list_to_tuple([RecordName | TupleList]).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Record to map for map
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec record_to_map_map(map(), static_record_infos()) -> map().
+record_to_map_map(MapValue, StaticRecordInfos) ->
+    maps:fold(
+        fun(FieldName, FieldValue, AccMap) ->
+            IsString = io_lib:char_list(FieldValue),
+            if
+                is_map(FieldValue) ->
+                    AccMap#{
+                        FieldName => record_to_map_map(FieldValue, StaticRecordInfos)
+                    };
+                is_tuple(FieldValue) ->
+                    AccMap#{
+                        FieldName => record_to_map_tuple(FieldValue, StaticRecordInfos)
+                    };
+                IsString ->
+                    AccMap#{
+                        FieldName => FieldValue
+                    };
+                is_list(FieldValue) ->
+                    AccMap#{
+                        FieldName => record_to_map_list(FieldValue, StaticRecordInfos)
+                    };
+                true ->
+                    AccMap#{
+                        FieldName => FieldValue
+                    }
+            end
+        end,
+        #{},
+        MapValue).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Map to record for map
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec map_to_record_map(map(), static_record_infos()) -> tuple() | map().
+map_to_record_map(MapValue, StaticRecordInfos) ->
+    case maps:get(record_name, MapValue, undefined) of
+        undefined ->
+            maps:fold(
+                fun(FieldName, FieldValue, AccMap) ->
+                    IsString = io_lib:char_list(FieldValue),
+                    if
+                        is_map(FieldValue) ->
+                            AccMap#{
+                                FieldName => map_to_record_map(FieldValue, StaticRecordInfos)
+                            };
+                        is_tuple(FieldValue) ->
+                            AccMap#{
+                                FieldName => map_to_record_tuple(FieldValue, StaticRecordInfos)
+                            };
+                        IsString ->
+                            AccMap#{
+                                FieldName => FieldValue
+                            };
+                        is_list(FieldValue) ->
+                            AccMap#{
+                                FieldName => map_to_record_list(FieldValue, StaticRecordInfos)
+                            };
+                        true ->
+                            AccMap#{
+                                FieldName => FieldValue
+                            }
+                    end
+                end,
+                #{},
+                MapValue
+            );
+        RecordName ->
+            map_to_record(maps:get(RecordName, StaticRecordInfos), MapValue, StaticRecordInfos)
+    end.
+
+
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
@@ -1778,3 +1912,125 @@ collect_replies(Keys, Map) ->
                     })
             end
     end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Do record to map
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec record_to_map(record_info(), [term()], map(), static_record_infos()) -> map().
+record_to_map([], [], FinalMap, _StaticRecordInfos) ->
+    FinalMap;
+record_to_map([FieldName | RestRecordInfo], [RecordValue | RestRecordValues], AccMap, StaticRecordInfos) ->
+    IsString = io_lib:char_list(RecordValue),
+    UpdatedAccMap =
+        if
+            RecordValue == undefined ->
+                AccMap;
+            is_map(RecordValue) ->
+                AccMap#{
+                    FieldName => record_to_map_map(RecordValue, StaticRecordInfos)
+                };
+            is_tuple(RecordValue) ->
+                AccMap#{
+                    FieldName => record_to_map_tuple(RecordValue, StaticRecordInfos)
+                };
+            IsString ->
+                AccMap#{
+                    FieldName => RecordValue
+                };
+            is_list(RecordValue) ->
+                AccMap#{
+                    FieldName => record_to_map_list(RecordValue, StaticRecordInfos)
+                };
+            true ->
+                AccMap#{
+                    FieldName => RecordValue
+                }
+        end,
+    record_to_map(RestRecordInfo, RestRecordValues, UpdatedAccMap, StaticRecordInfos).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Record to map for tuple
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec record_to_map_tuple(tuple(), static_record_infos()) -> tuple() | map().
+record_to_map_tuple(TupleValue, StaticRecordInfos) ->
+    [RecordName | _RecordValues] = TupleList = tuple_to_list(TupleValue),
+    case maps:get(RecordName, StaticRecordInfos, undefined) of
+        undefined ->
+            list_to_tuple(record_to_map_list(TupleList, StaticRecordInfos));
+        SubRecordInfo ->
+            record_to_map(SubRecordInfo, TupleValue, StaticRecordInfos)
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Record to map for list
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec record_to_map_list(list(), static_record_infos()) -> list().
+record_to_map_list(ListValue, StaticRecordInfos) ->
+    [
+        begin
+            IsString = io_lib:char_list(Element),
+            if
+                is_map(Element) ->
+                    record_to_map_map(Element, StaticRecordInfos);
+                is_tuple(Element) ->
+                    record_to_map_tuple(Element, StaticRecordInfos);
+                IsString ->
+                    Element;
+                is_list(Element) ->
+                    record_to_map_list(Element, StaticRecordInfos);
+                true ->
+                    Element
+            end
+        end || Element <- ListValue
+    ].
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Map to record for tuple
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec map_to_record_tuple(tuple(), static_record_infos()) -> tuple().
+map_to_record_tuple(TupleValue, StaticRecordInfos) ->
+    list_to_tuple(map_to_record_list(tuple_to_list(TupleValue), StaticRecordInfos)).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Map to record for tuple
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec map_to_record_list(list(), static_record_infos()) -> list().
+map_to_record_list(ListValue, StaticRecordInfos) ->
+    [
+        begin
+            IsString = io_lib:char_list(Element),
+            if
+                is_map(Element) ->
+                    map_to_record_map(Element, StaticRecordInfos);
+                is_tuple(Element) ->
+                    map_to_record_tuple(Element, StaticRecordInfos);
+                IsString ->
+                    Element;
+                is_list(Element) ->
+                    map_to_record_list(Element, StaticRecordInfos);
+                true ->
+                    Element
+            end
+        end
+        || Element <- ListValue
+    ].
