@@ -1353,7 +1353,7 @@ mapreduce(Payloads) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec record_to_map(record_info(), tuple(), static_record_infos()) -> map().
+-spec record_to_map(record_info(), tuple(), record_infos()) -> map().
 record_to_map(RecordInfo, Record, StaticRecordInfos) ->
     [RecordName | RecordValues] = tuple_to_list(Record),
     RecordMap = record_to_map(RecordInfo, RecordValues, #{}, StaticRecordInfos),
@@ -1368,7 +1368,7 @@ record_to_map(RecordInfo, Record, StaticRecordInfos) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec map_to_record(record_info(), map(), static_record_infos()) -> tuple().
+-spec map_to_record(record_info(), map(), record_infos()) -> tuple().
 map_to_record(RecordInfo, #{
     record_name := RecordName
 } = MapValue, StaticRecordInfos) ->
@@ -1401,7 +1401,7 @@ map_to_record(RecordInfo, #{
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec record_to_map_map(map(), static_record_infos()) -> map().
+-spec record_to_map_map(map(), record_infos()) -> map().
 record_to_map_map(MapValue, StaticRecordInfos) ->
     maps:fold(
         fun(FieldName, FieldValue, AccMap) ->
@@ -1439,7 +1439,7 @@ record_to_map_map(MapValue, StaticRecordInfos) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec map_to_record_map(map(), static_record_infos()) -> tuple() | map().
+-spec map_to_record_map(map(), record_infos()) -> tuple() | map().
 map_to_record_map(MapValue, StaticRecordInfos) ->
     case maps:get(record_name, MapValue, undefined) of
         undefined ->
@@ -1920,7 +1920,7 @@ collect_replies(Keys, Map) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec record_to_map(record_info(), [term()], map(), static_record_infos()) -> map().
+-spec record_to_map(record_info(), [term()], map(), record_infos()) -> map().
 record_to_map([], [], FinalMap, _StaticRecordInfos) ->
     FinalMap;
 record_to_map([FieldName | RestRecordInfo], [RecordValue | RestRecordValues], AccMap, StaticRecordInfos) ->
@@ -1959,7 +1959,7 @@ record_to_map([FieldName | RestRecordInfo], [RecordValue | RestRecordValues], Ac
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec record_to_map_tuple(tuple(), static_record_infos()) -> tuple() | map().
+-spec record_to_map_tuple(tuple(), record_infos()) -> tuple() | map().
 record_to_map_tuple(TupleValue, StaticRecordInfos) ->
     [RecordName | _RecordValues] = TupleList = tuple_to_list(TupleValue),
     case maps:get(RecordName, StaticRecordInfos, undefined) of
@@ -1976,7 +1976,7 @@ record_to_map_tuple(TupleValue, StaticRecordInfos) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec record_to_map_list(list(), static_record_infos()) -> list().
+-spec record_to_map_list(list(), record_infos()) -> list().
 record_to_map_list(ListValue, StaticRecordInfos) ->
     [
         begin
@@ -2003,7 +2003,7 @@ record_to_map_list(ListValue, StaticRecordInfos) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec map_to_record_tuple(tuple(), static_record_infos()) -> tuple().
+-spec map_to_record_tuple(tuple(), record_infos()) -> tuple().
 map_to_record_tuple(TupleValue, StaticRecordInfos) ->
     list_to_tuple(map_to_record_list(tuple_to_list(TupleValue), StaticRecordInfos)).
 
@@ -2014,7 +2014,7 @@ map_to_record_tuple(TupleValue, StaticRecordInfos) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec map_to_record_list(list(), static_record_infos()) -> list().
+-spec map_to_record_list(list(), record_infos()) -> list().
 map_to_record_list(ListValue, StaticRecordInfos) ->
     [
         begin
