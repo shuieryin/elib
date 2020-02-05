@@ -84,7 +84,7 @@
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
 -type record_info() :: [atom()].
--type record_infos() :: #{atom() => {record_info(), tuple()}}.
+-type record_infos() :: #{atom() => {record_info(), tuple()} | record_info()}.
 
 -define(H(X), (hex(X)):16).
 
@@ -1518,7 +1518,7 @@ map_to_record_map(MapValue, StaticRecordInfos) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec map_to_record_json(FieldValue :: map(), StaticRecordInfos :: map()) -> tuple() | map().
+-spec map_to_record_json(FieldValue :: map(), StaticRecordInfos :: record_infos()) -> tuple() | map().
 map_to_record_json(FieldValue, StaticRecordInfos) ->
     case maps:get(<<"erl_record_name">>, FieldValue, undefined) of
         undefined ->
