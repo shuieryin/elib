@@ -78,12 +78,13 @@
     record_to_map/3,
     map_to_record/3,
     record_to_map_map/2,
-    map_to_record_map/2
+    map_to_record_map/2,
+    map_to_record_json/2
 ]).
 
 -type valid_type() :: atom | binary | bitstring | boolean | float | function | integer | list | pid | port | reference | tuple | map.
 -type record_info() :: [atom()].
--type record_infos() :: #{atom() => record_info()}.
+-type record_infos() :: #{atom() => {record_info(), tuple()}}.
 
 -define(H(X), (hex(X)):16).
 
@@ -876,7 +877,7 @@ gen_get_params(HeaderParams) ->
 %%--------------------------------------------------------------------
 -spec has_function(module(), atom(), integer()) -> boolean().
 has_function(Module, FuncName, TargetArity) ->
-    ExportedFunctions = Module:module_info(exports),
+    ExportedFunctions = apply(Module, module_info, [exports]),
     case lists:keyfind(FuncName, 1, ExportedFunctions) of
         {FuncName, Arity} ->
             TargetArity == -1 orelse Arity == TargetArity;
@@ -1353,9 +1354,10 @@ mapreduce(Payloads) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec record_to_map(record_info(), tuple(), record_infos()) -> map().
-record_to_map(RecordInfo, Record, StaticRecordInfos) ->
+-spec record_to_map({record_info(), tuple()} | record_info(), tuple(), record_infos()) -> map().
+record_to_map(RawRecordInfo, Record, StaticRecordInfos) ->
     [RecordName | RecordValues] = tuple_to_list(Record),
+    {RecordInfo, _DefaultRecord} = tackle_record_info(RawRecordInfo),
     RecordMap = record_to_map(RecordInfo, RecordValues, #{}, StaticRecordInfos),
     RecordMap#{
         record_name => RecordName
@@ -1368,31 +1370,64 @@ record_to_map(RecordInfo, Record, StaticRecordInfos) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec map_to_record(record_info(), map(), record_infos()) -> tuple().
-map_to_record(RecordInfo, #{
+-spec map_to_record({record_info(), tuple()} | record_info(), map(), record_infos()) -> tuple().
+map_to_record(RawRecordInfo, #{
     record_name := RecordName
 } = MapValue, StaticRecordInfos) ->
-    TupleList = lists:foldr(
-        fun(FieldName, AccRecordList) ->
-            FieldValue = maps:get(FieldName, MapValue, undefined),
-            IsString = io_lib:char_list(FieldValue),
-            [if
-                 is_map(FieldValue) ->
-                     map_to_record_map(FieldValue, StaticRecordInfos);
-                 is_tuple(FieldValue) ->
-                     map_to_record_tuple(FieldValue, StaticRecordInfos);
-                 IsString ->
-                     FieldValue;
-                 is_list(FieldValue) ->
-                     map_to_record_list(FieldValue, StaticRecordInfos);
-                 true ->
-                     FieldValue
-             end | AccRecordList]
-        end,
-        [],
-        RecordInfo
-    ),
+    {RecordInfo, DefaultRecordList} = tackle_record_info(RawRecordInfo),
+    TupleList = do_map_to_record(MapValue, RecordInfo, DefaultRecordList, [], StaticRecordInfos),
     list_to_tuple([RecordName | TupleList]).
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Do map to record list
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec do_map_to_record(
+    MapValue :: map(),
+    RecordInfo :: list(),
+    DefaultRecordList :: list(),
+    AccRecordList :: list(),
+    StaticRecordInfos :: record_infos()
+) -> list().
+do_map_to_record(MapValue, [FieldName | RestRecordInfo], DefaultRecordList, AccRecordList, StaticRecordInfos) ->
+    {DefaultValue, RestDefaultRecordList} =
+        case DefaultRecordList of
+            [] ->
+                {undefined, DefaultRecordList};
+            [RawDefaultValue | RawRestDefaultRecordList] ->
+                {RawDefaultValue, RawRestDefaultRecordList}
+        end,
+    FieldValue =
+        case maps:get(FieldName, MapValue, undefined) of
+            undefined ->
+                maps:get(atom_to_binary(FieldName, utf8), MapValue, DefaultValue);
+            RawFieldValue ->
+                RawFieldValue
+        end,
+    IsString = io_lib:char_list(FieldValue),
+    do_map_to_record(MapValue, RestRecordInfo, RestDefaultRecordList,
+        [if
+             is_map(FieldValue) ->
+                 map_to_record_json(FieldValue, StaticRecordInfos);
+             is_tuple(FieldValue) ->
+                 map_to_record_tuple(FieldValue, StaticRecordInfos);
+             IsString ->
+                 FieldValue;
+             is_list(FieldValue) ->
+                 map_to_record_list(FieldValue, StaticRecordInfos);
+             true ->
+                 if
+                     is_binary(FieldValue) andalso is_atom(DefaultValue) ->
+                         binary_to_atom(FieldValue, utf8);
+                     true ->
+                         FieldValue
+                 end
+         end | AccRecordList], StaticRecordInfos);
+do_map_to_record(_MapValue, [], [], FinalRecordList, _StaticRecordInfos) ->
+    lists:reverse(FinalRecordList).
 
 
 %%--------------------------------------------------------------------
@@ -1449,7 +1484,7 @@ map_to_record_map(MapValue, StaticRecordInfos) ->
                     if
                         is_map(FieldValue) ->
                             AccMap#{
-                                FieldName => map_to_record_map(FieldValue, StaticRecordInfos)
+                                FieldName => map_to_record_json(FieldValue, StaticRecordInfos)
                             };
                         is_tuple(FieldValue) ->
                             AccMap#{
@@ -1474,6 +1509,30 @@ map_to_record_map(MapValue, StaticRecordInfos) ->
             );
         RecordName ->
             map_to_record(maps:get(RecordName, StaticRecordInfos), MapValue, StaticRecordInfos)
+    end.
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Map field handling
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec map_to_record_json(FieldValue :: map(), StaticRecordInfos :: map()) -> tuple() | map().
+map_to_record_json(FieldValue, StaticRecordInfos) ->
+    case maps:get(<<"erl_record_name">>, FieldValue, undefined) of
+        undefined ->
+            map_to_record_map(FieldValue, StaticRecordInfos);
+        ErlRecordNameBin ->
+            ErlRecordName = binary_to_atom(ErlRecordNameBin, utf8),
+            case maps:get(ErlRecordName, StaticRecordInfos, undefined) of
+                undefined ->
+                    map_to_record_map(FieldValue, StaticRecordInfos);
+                FieldRecordInfo ->
+                    map_to_record(FieldRecordInfo, maps:remove(<<"erl_record_name">>, FieldValue#{
+                        record_name => ErlRecordName
+                    }), StaticRecordInfos)
+            end
     end.
 
 
@@ -2021,7 +2080,7 @@ map_to_record_list(ListValue, StaticRecordInfos) ->
             IsString = io_lib:char_list(Element),
             if
                 is_map(Element) ->
-                    map_to_record_map(Element, StaticRecordInfos);
+                    map_to_record_json(Element, StaticRecordInfos);
                 is_tuple(Element) ->
                     map_to_record_tuple(Element, StaticRecordInfos);
                 IsString ->
@@ -2034,3 +2093,20 @@ map_to_record_list(ListValue, StaticRecordInfos) ->
         end
         || Element <- ListValue
     ].
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Tackle record info
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec tackle_record_info({record_info(), tuple()} | tuple()) -> {record_info(), list()}.
+tackle_record_info(RawRecordInfo) ->
+    case RawRecordInfo of
+        {RecordInfo, DefaultRecord} when is_list(RecordInfo) andalso is_tuple(DefaultRecord) ->
+            [_RecordName | DefaultRecordList] = tuple_to_list(DefaultRecord),
+            {RecordInfo, DefaultRecordList};
+        RawRecordInfo ->
+            {RawRecordInfo, []}
+    end.
