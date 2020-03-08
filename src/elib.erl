@@ -1733,8 +1733,13 @@ gen_get_params(
     ParamsMap;
 gen_get_params(Pos, Bin, ParamsMap) ->
     {ValueBin, CurPosByValue} = gen_get_param_value(binary:at(Bin, Pos), [], Pos - 1, Bin),
-    {KeyBin, CurPosByKey} = gen_req_param_key(binary:at(Bin, CurPosByValue), [], CurPosByValue - 1, Bin),
-    gen_get_params(CurPosByKey, Bin, maps:put(KeyBin, ValueBin, ParamsMap)).
+    case CurPosByValue of
+        -1 ->
+            gen_get_params(CurPosByValue, Bin, ParamsMap);
+        CurPosByValue ->
+            {KeyBin, CurPosByKey} = gen_req_param_key(binary:at(Bin, CurPosByValue), [], CurPosByValue - 1, Bin),
+            gen_get_params(CurPosByKey, Bin, maps:put(KeyBin, ValueBin, ParamsMap))
+    end.
 
 
 %%--------------------------------------------------------------------
@@ -1752,6 +1757,8 @@ gen_get_params(Pos, Bin, ParamsMap) ->
     CurPos :: Pos.
 gen_get_param_value($=, ValueBinList, Pos, _SrcBin) ->
     {list_to_binary(ValueBinList), Pos};
+gen_get_param_value(_CurByte, ValueBinList, -1, _SrcBin) ->
+    {list_to_binary(ValueBinList), -1};
 gen_get_param_value(CurByte, ValueBinList, Pos, SrcBin) ->
     gen_get_param_value(binary:at(SrcBin, Pos), [CurByte | ValueBinList], Pos - 1, SrcBin).
 
