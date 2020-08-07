@@ -1050,9 +1050,14 @@ deep_merge_maps(Map1, Map2) ->
         fun(Key, TargetValue, AccMap) ->
             case is_map(TargetValue) of
                 false ->
-                    AccMap#{
-                        Key => TargetValue
-                    };
+                    case TargetValue of
+                        '$remove_key' ->
+                            maps:remove(Key, AccMap);
+                        TargetValue ->
+                            AccMap#{
+                                Key => TargetValue
+                            }
+                    end;
                 true ->
                     case maps:get(Key, AccMap, undefined) of
                         OriValue when is_map(OriValue) ->
