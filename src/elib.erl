@@ -966,7 +966,7 @@ http_request(UriBin, BodyMap, RawMethod) ->
         RequestParams,
 
         % Http options
-        [{ssl, [{verify, 0}]}],
+        [],
 
         % Options
         []
