@@ -123,7 +123,7 @@ is_module_exist(Module) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec type_of(X) -> Result when
-    X :: term(), % generic term
+    X :: term(),
     Result :: valid_type() | unknown.
 type_of(X) when is_integer(X) -> integer;
 type_of(X) when is_float(X) -> float;
@@ -148,7 +148,7 @@ type_of(_X) -> unknown.
 %% @end
 %%--------------------------------------------------------------------
 -spec timestamp() -> Timestamp when
-    Timestamp :: pos_integer(). % generic integer
+    Timestamp :: pos_integer().
 timestamp() ->
     {MegaSecs, Secs, _MicroSecs} = os:timestamp(),
     MegaSecs * 1000000 + Secs.
@@ -161,7 +161,7 @@ timestamp() ->
 %% @end
 %%--------------------------------------------------------------------
 -spec timestamp_milli() -> Timestamp when
-    Timestamp :: pos_integer(). % generic integer
+    Timestamp :: pos_integer().
 timestamp_milli() ->
     {MegaSecs, Secs, MicroSecs} = os:timestamp(),
     MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000.
@@ -188,9 +188,9 @@ hot_code_replace(ModuleNameList) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec index_of(Item, List) -> Pos when
-    List :: [term()], % generic term
-    Item :: term(), % generic term
-    Pos :: -1 | pos_integer(). % generic integer
+    List :: [term()],
+    Item :: term(),
+    Pos :: -1 | pos_integer().
 index_of(Item, List) ->
     index_of(Item, List, 1).
 
@@ -258,7 +258,7 @@ remove_last_newline(SrcList) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec random_from_list(SrcList) -> Element when
-    Element :: term() | undefined, % generic term
+    Element :: term() | undefined,
     SrcList :: [Element].
 random_from_list([]) ->
     undefined;
@@ -306,8 +306,8 @@ binary_join(List, Sep) ->
 %%--------------------------------------------------------------------
 -spec type_values(ModuleName, TypeName) -> TypeValues when
     ModuleName :: module(),
-    TypeName :: atom(), % generic atom
-    TypeValues :: term(). % generic term
+    TypeName :: atom(),
+    TypeValues :: term().
 type_values(ModuleName, TypeName) ->
     ModulePath = module_src_path(ModuleName),
     {ok, AbstractCode} = dialyzer_utils:get_core_from_src(ModulePath),
@@ -433,8 +433,8 @@ show_errors(Limit) when is_integer(Limit) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec collect_record_value(RecordFieldNames, Record, NewFieldNames, ExistingFieldBindings) -> UpdatedFieldBindings when
-    RecordFieldNames :: [atom()], % generic atom
-    Record :: tuple(), % generic tuple
+    RecordFieldNames :: [atom()],
+    Record :: tuple(),
     NewFieldNames :: erl_eval:bindings(),
     ExistingFieldBindings :: erl_eval:bindings(),
     UpdatedFieldBindings :: ExistingFieldBindings.
@@ -451,7 +451,7 @@ collect_record_value(RecordFieldNames, Record, NewFieldNames, ExistingFieldBindi
 %%--------------------------------------------------------------------
 -spec strings_to_atoms(StringList) -> AtomList when
     StringList :: [string()],
-    AtomList :: [atom()]. % generic atom
+    AtomList :: [atom()].
 strings_to_atoms(StringList) ->
     [list_to_atom(String) || String <- StringList].
 
@@ -464,7 +464,7 @@ strings_to_atoms(StringList) ->
 %%--------------------------------------------------------------------
 -spec binaries_to_atoms(BinaryList) -> AtomList when
     BinaryList :: [binary()],
-    AtomList :: [atom()]. % generic atom
+    AtomList :: [atom()].
 binaries_to_atoms(StringList) ->
     [binary_to_atom(Bin, utf8) || Bin <- StringList].
 
@@ -476,8 +476,8 @@ binaries_to_atoms(StringList) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec update_record_value(RecordFieldNames, Record, NewValueBindings) -> UpdatedRecord when
-    RecordFieldNames :: [atom()], % generic atom
-    Record :: tuple(), % generic tuple
+    RecordFieldNames :: [atom()],
+    Record :: tuple(),
     NewValueBindings :: erl_eval:bindings(),
     UpdatedRecord :: Record.
 update_record_value(RecordFieldNames, Record, NewValueBindings) ->
@@ -493,8 +493,8 @@ update_record_value(RecordFieldNames, Record, NewValueBindings) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec remove_record_fields(RecordFieldNames, Record, FieldNamesToBeRemoved) -> UpdatedRecord when
-    RecordFieldNames :: [atom()], % generic atom
-    Record :: tuple(), % generic tuple
+    RecordFieldNames :: [atom()],
+    Record :: tuple(),
     FieldNamesToBeRemoved :: RecordFieldNames,
     UpdatedRecord :: Record.
 remove_record_fields(RecordFieldNames, Record, FieldNamesToBeRemoved) ->
@@ -510,9 +510,9 @@ remove_record_fields(RecordFieldNames, Record, FieldNamesToBeRemoved) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec add_record_fields(OldRecordFieldNames, NewRecordFieldNames, Record, NewValueBindings) -> UpdatedRecord when
-    OldRecordFieldNames :: [atom()], % generic atom
+    OldRecordFieldNames :: [atom()],
     NewRecordFieldNames :: OldRecordFieldNames,
-    Record :: tuple(), % generic tuple
+    Record :: tuple(),
     NewValueBindings :: erl_eval:bindings(),
     UpdatedRecord :: Record.
 add_record_fields(OldRecordFieldNames, NewRecordFieldNames, Record, NewValueBindings) ->
@@ -552,7 +552,7 @@ f2i(Float, Min) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec to_binary(Term) -> Binary when
-    Term :: term(), % generic term
+    Term :: term(),
     Binary :: binary().
 to_binary(Term) when is_binary(Term) ->
     Term;
@@ -574,7 +574,7 @@ to_binary(Term) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec app_name() -> atom(). % generic atom
+-spec app_name() -> atom().
 app_name() ->
     AppNameStr = begin
                      [ProjectPath | _RestPath] = re:split(filename:absname(""), "_build", [{return, list}]),
@@ -842,7 +842,7 @@ rand_by_weigh(TotalWeighing, WeighingList) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec uuid() -> atom(). % generic atom
+-spec uuid() -> atom().
 uuid() ->
     list_to_atom(uuid:uuid_to_string(uuid:get_v4())).
 
@@ -853,7 +853,7 @@ uuid() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec uuid_bin() -> binary(). % generic atom
+-spec uuid_bin() -> binary().
 uuid_bin() ->
     list_to_binary(uuid:uuid_to_string(uuid:get_v4())).
 
@@ -1569,8 +1569,8 @@ get_module_src_path([_Other | Rest]) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec do_collect_record_value(RecordFieldNames, DataList, TargetFieldNames, AccFieldBindings) -> FinalFieldBingdings when
-    RecordFieldNames :: [atom()], % generic atom
-    DataList :: [term()], % generic term
+    RecordFieldNames :: [atom()],
+    DataList :: [term()],
     TargetFieldNames :: erl_eval:bindings(),
     AccFieldBindings :: erl_eval:bindings(),
     FinalFieldBingdings :: AccFieldBindings.
@@ -1600,8 +1600,8 @@ do_collect_record_value([], [], _TargetFieldNames, FinalFieldBingdings) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec index_of(Item, List, Pos) -> FinalPos when
-    Item :: term(), % generic term
-    List :: [term()], % generic term
+    Item :: term(),
+    List :: [term()],
     Pos :: pos_integer(),
     FinalPos :: -1 | pos_integer().
 index_of(_Item, [], _Pos) ->
@@ -1620,8 +1620,8 @@ index_of(Item, [_NotMatchItem | Tail], Pos) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec do_update_record_value(RecordFieldNames, ExistingDataList, NewValueBindings, AccDataList) -> UpdatedDataList when
-    RecordFieldNames :: [atom()], % generic atom
-    ExistingDataList :: [term()], % generic term
+    RecordFieldNames :: [atom()],
+    ExistingDataList :: [term()],
     NewValueBindings :: erl_eval:bindings(),
     AccDataList :: ExistingDataList,
     UpdatedDataList :: AccDataList.
@@ -1648,8 +1648,8 @@ do_update_record_value([], [], _NewValueBingdings, UpdatedDataList) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec do_remove_record_fields(RecordFieldNames, ExistingDataList, FieldNamesToBeRemoved, AccDataList) -> UpdatedDataList when
-    RecordFieldNames :: [atom()], % generic atom
-    ExistingDataList :: [term()], % generic term
+    RecordFieldNames :: [atom()],
+    ExistingDataList :: [term()],
     FieldNamesToBeRemoved :: RecordFieldNames,
     AccDataList :: ExistingDataList,
     UpdatedDataList :: AccDataList.
@@ -1676,9 +1676,9 @@ do_remove_record_fields([], [], _FieldNamesToBeRemoved, UpdatedDataList) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec do_add_record_fields(OldRecordFieldNames, NewRecordFieldNames, ExistingDataList, NewValueBindings, AccDataList) -> UpdatedDataList when
-    OldRecordFieldNames :: [atom()], % generic atom
+    OldRecordFieldNames :: [atom()],
     NewRecordFieldNames :: OldRecordFieldNames,
-    ExistingDataList :: [term()], % generic term
+    ExistingDataList :: [term()],
     NewValueBindings :: erl_eval:bindings(),
     AccDataList :: ExistingDataList,
     UpdatedDataList :: AccDataList.
@@ -1756,7 +1756,7 @@ gen_get_params(Pos, Bin, ParamsMap) ->
 -spec gen_get_param_value(CurByte, ValueBinList, Pos, SrcBin) -> {ValueBin, CurPos} when
     CurByte :: byte(),
     ValueBinList :: [CurByte],
-    Pos :: integer(), % generic integer
+    Pos :: integer(),
     SrcBin :: binary(),
     ValueBin :: SrcBin,
     CurPos :: Pos.
@@ -1777,7 +1777,7 @@ gen_get_param_value(CurByte, ValueBinList, Pos, SrcBin) ->
 -spec gen_req_param_key(CurByte, KeyBinList, Pos, SrcBin) -> {KeyBin, CurPos} when
     CurByte :: byte(),
     KeyBinList :: [CurByte],
-    Pos :: integer(), % generic integer
+    Pos :: integer(),
     SrcBin :: binary(),
     KeyBin :: SrcBin,
     CurPos :: Pos.
@@ -1893,8 +1893,8 @@ deep_merge_data_for_list([SourceItem | RestSourceItems], [TargetItem | RestTarge
 %% @end
 %%--------------------------------------------------------------------
 -spec deep_merge_data_for_record(RecordFieldNames, Record, NewValueBindings, RecordInfos) -> UpdatedRecord when
-    RecordFieldNames :: [atom()], % generic atom
-    Record :: tuple(), % generic tuple
+    RecordFieldNames :: [atom()],
+    Record :: tuple(),
     NewValueBindings :: erl_eval:bindings(),
     RecordInfos :: record_infos(),
     UpdatedRecord :: Record.
@@ -1911,8 +1911,8 @@ deep_merge_data_for_record(RecordFieldNames, Record, NewValueBindings, RecordInf
 %% @end
 %%--------------------------------------------------------------------
 -spec do_deep_merge_data_for_record(RecordFieldNames, ExistingDataList, NewValueBindings, AccDataList, RecordInfos) -> UpdatedDataList when
-    RecordFieldNames :: [atom()], % generic atom
-    ExistingDataList :: [term()], % generic term
+    RecordFieldNames :: [atom()],
+    ExistingDataList :: [term()],
     NewValueBindings :: erl_eval:bindings(),
     AccDataList :: ExistingDataList,
     RecordInfos :: record_infos(),
