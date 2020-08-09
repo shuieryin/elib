@@ -145,7 +145,7 @@ stop() ->
     ignore when
 
     State :: #state{},
-    Reason :: term(). % generic term
+    Reason :: term().
 init({StopServerMethod, InfoServerName}) ->
     io:format("~p starting...", [?MODULE]),
     register(InfoServerName, self()),
@@ -195,10 +195,10 @@ init({StopServerMethod, InfoServerName}) ->
 
     Reply :: [module()],
 
-    From :: {pid(), Tag :: term()}, % generic term
+    From :: {pid(), Tag :: term()},
     State :: #state{},
     NewState :: State,
-    Reason :: term(). % generic term
+    Reason :: term().
 handle_call(module_sequence, _From, #state{
     root_sup_name = RootSupName
 } = State) ->
@@ -222,7 +222,7 @@ handle_call(module_sequence, _From, #state{
 
     State :: #state{},
     NewState :: State,
-    Reason :: term(). % generic term
+    Reason :: term().
 handle_cast(stop, State) ->
     {stop, normal, State};
 handle_cast(stop_server, #state{
@@ -246,10 +246,10 @@ handle_cast(stop_server, #state{
     {noreply, NewState, timeout() | hibernate} |
     {stop, Reason, NewState} when
 
-    Info :: term(), % generic term
+    Info :: term(),
     State :: #state{},
     NewState :: State,
-    Reason :: term(). % generic term
+    Reason :: term().
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -265,7 +265,7 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec terminate(Reason, State) -> ok when
-    Reason :: (normal | shutdown | {shutdown, term()} | term()), % generic term
+    Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}.
 terminate(_Reason, _State) ->
     ok.
@@ -282,11 +282,11 @@ terminate(_Reason, _State) ->
     {ok, NewState} |
     {error, Reason} when
 
-    OldVsn :: term() | {down, term()}, % generic term
+    OldVsn :: term() | {down, term()},
     State :: #state{},
-    Extra :: term(), % generic term
+    Extra :: term(),
     NewState :: State,
-    Reason :: term(). % generic term
+    Reason :: term().
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
@@ -302,9 +302,9 @@ code_change(_OldVsn, State, _Extra) ->
 -spec format_status(Opt, StatusData) -> Status when
     Opt :: 'normal' | 'terminate',
     StatusData :: [PDict | State],
-    PDict :: [{Key :: term(), Value :: term()}], % generic term
+    PDict :: [{Key :: term(), Value :: term()}],
     State :: #state{},
-    Status :: term(). % generic term
+    Status :: term().
 format_status(Opt, StatusData) ->
     gen_server:format_status(Opt, StatusData).
 

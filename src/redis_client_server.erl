@@ -45,8 +45,8 @@
 -define(PORT, 6379).
 
 -type redis_client() :: pid().
--type key() :: term(). % generic term
--type value() :: term(). % generic term
+-type key() :: term().
+-type value() :: term().
 
 -record(state, {
     redis_client_pid :: redis_client() | undefined
@@ -195,7 +195,7 @@ clear_all() ->
     ignore when
 
     State :: #state{},
-    Reason :: term(). % generic term
+    Reason :: term().
 init([]) ->
     io:format("~p starting...", [?MODULE]),
 
@@ -231,10 +231,10 @@ init([]) ->
     Keys :: [Key],
     Value :: value(),
 
-    From :: {pid(), Tag :: term()}, % generic term
+    From :: {pid(), Tag :: term()},
     State :: #state{},
     NewState :: State,
-    Reason :: term(). % generic term
+    Reason :: term().
 handle_call(
     {get, Key},
     _From,
@@ -287,7 +287,7 @@ handle_call({del, Keys, IsSave}, _From, State) ->
 
     State :: #state{},
     NewState :: State,
-    Reason :: term(). % generic term
+    Reason :: term().
 handle_cast({set, Key, Value, IsSave}, State) ->
     set(Key, Value, IsSave, State),
     {noreply, State};
@@ -315,10 +315,10 @@ handle_cast(stop, State) ->
     {noreply, NewState, timeout() | hibernate} |
     {stop, Reason, NewState} when
 
-    Info :: term(), % generic term
+    Info :: term(),
     State :: #state{},
     NewState :: State,
-    Reason :: term(). % generic term
+    Reason :: term().
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -334,7 +334,7 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec terminate(Reason, State) -> ok when
-    Reason :: (normal | shutdown | {shutdown, term()} | term()), % generic term
+    Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}.
 terminate(_Reason, _State) ->
     ok.
@@ -351,11 +351,11 @@ terminate(_Reason, _State) ->
     {ok, NewState} |
     {error, Reason} when
 
-    OldVsn :: term() | {down, term()}, % generic term
+    OldVsn :: term() | {down, term()},
     State :: #state{},
-    Extra :: term(), % generic term
+    Extra :: term(),
     NewState :: State,
-    Reason :: term(). % generic term
+    Reason :: term().
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
@@ -371,9 +371,9 @@ code_change(_OldVsn, State, _Extra) ->
 -spec format_status(Opt, StatusData) -> Status when
     Opt :: 'normal' | 'terminate',
     StatusData :: [PDict | State],
-    PDict :: [{Key :: term(), Value :: term()}], % generic term
+    PDict :: [{Key :: term(), Value :: term()}],
     State :: #state{},
-    Status :: term(). % generic term
+    Status :: term().
 format_status(Opt, StatusData) ->
     gen_server:format_status(Opt, StatusData).
 
