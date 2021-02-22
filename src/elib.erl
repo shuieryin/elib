@@ -700,12 +700,11 @@ cmd(CmdStr, Func, CustomArgs) ->
 cmd_receive(OutputNode, Func, CustomArgs) ->
     receive
         {OutputNode, {data, {eol, OutputBin}}} ->
-            Func(OutputBin, CustomArgs),
-            cmd_receive(OutputNode, Func, CustomArgs);
+            UpdatedCustomArgs = Func(OutputBin, CustomArgs),
+            cmd_receive(OutputNode, Func, UpdatedCustomArgs);
         {OutputNode, {exit_status, ExitCode}} ->
             ExitCodeBin = integer_to_binary(ExitCode),
-            Func(ExitCodeBin, CustomArgs),
-            Func(<<"done\n">>, CustomArgs)
+            Func(ExitCodeBin, CustomArgs)
     end.
 
 
