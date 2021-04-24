@@ -902,7 +902,7 @@ has_function(Module, FuncName, TargetArity) ->
     }
 ) -> map().
 http_request(Payload) ->
-    RawMethod = maps:get(uri, Payload),
+    RawMethod = maps:get(method, Payload),
     RawUriBin = maps:get(uri, Payload),
     UriBin =
         if
@@ -914,11 +914,18 @@ http_request(Payload) ->
 
     Body = maps:get(body, Payload, #{}),
     Headers = maps:get(headers, Payload, []),
-    RawContentType = maps:get(content_type, Payload, "raw"),
 
     {Method, RequestParams} =
         case RawMethod of
             post ->
+                RawContentType = maps:get(content_type, Payload, "raw"),
+                ContentType =
+                    if
+                        is_binary(RawContentType) ->
+                            binary_to_list(RawContentType);
+                        true ->
+                            RawContentType
+                    end,
                 {
                     post,
                     {
@@ -929,7 +936,7 @@ http_request(Payload) ->
                         Headers,
 
                         % Content type
-                        RawContentType,
+                        ContentType,
 
                         %Body
                         case is_map(Body) of
