@@ -11,3 +11,6 @@ reset:
 
 edoc:
 	@./config/rebar3 edoc
+
+upver:
+	@PYTHONPATH=${PWD} python3 ./config/upver.py
