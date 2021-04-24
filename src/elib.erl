@@ -55,7 +55,7 @@
     uuid_bin/0,
     gen_get_params/1,
     has_function/3,
-    http_request/3,
+    http_request/1,
     to_md5/1,
     bin_to_document_id/1,
     document_id_to_bin/1,
@@ -891,12 +891,31 @@ has_function(Module, FuncName, TargetArity) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
+
 -spec http_request(
-    UriBin :: binary(),
-    BodyMap :: map() | binary(),
-    Method :: get | post | file
+    #{
+    uri := binary() | string(),
+    method := get | post | file,
+    body => map() | binary(),
+    headers => list(),
+    content_type => string()
+    }
 ) -> map().
-http_request(UriBin, BodyMap, RawMethod) ->
+http_request(Payload) ->
+    RawMethod = maps:get(uri, Payload),
+    RawUriBin = maps:get(uri, Payload),
+    UriBin =
+        if
+            is_binary(RawUriBin) ->
+                binary_to_list(RawUriBin);
+            true ->
+                RawUriBin
+        end,
+
+    Body = maps:get(body, Payload, #{}),
+    Headers = maps:get(headers, Payload, []),
+    RawContentType = maps:get(content_type, Payload, "raw"),
+
     {Method, RequestParams} =
         case RawMethod of
             post ->
@@ -904,20 +923,20 @@ http_request(UriBin, BodyMap, RawMethod) ->
                     post,
                     {
                         % URI
-                        binary_to_list(UriBin),
+                        UriBin,
 
                         % Headers
-                        [],
+                        Headers,
 
                         % Content type
-                        "raw",
+                        RawContentType,
 
                         %Body
-                        case is_map(BodyMap) of
+                        case is_map(Body) of
                             true ->
-                                jsx:encode(BodyMap);
+                                jsx:encode(Body);
                             false ->
-                                BodyMap
+                                Body
                         end
                     }
                 };
@@ -926,26 +945,26 @@ http_request(UriBin, BodyMap, RawMethod) ->
                     get,
                     {
                         % URI
-                        binary_to_list(UriBin),
+                        UriBin,
 
                         % Headers
-                        []
+                        Headers
                     }
                 };
             file ->
                 Boundary = uuid_bin(),
                 ContentType = "multipart/form-data; boundary=" ++ binary_to_list(Boundary),
-                Filename = filename:basename(BodyMap),
-                {ok, Data} = file:read_file(BodyMap),
+                Filename = filename:basename(Body),
+                {ok, Data} = file:read_file(Body),
                 RequestBody = format_multipart_formdata(Data, <<"media">>, [Filename], <<"application/octet-stream">>, Boundary),
                 {
                     post,
                     {
                         % URI
-                        binary_to_list(UriBin),
+                        UriBin,
 
                         % Headers
-                        [],
+                        Headers,
 
                         % Content type
                         ContentType,
