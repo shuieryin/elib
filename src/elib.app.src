@@ -1,5 +1,5 @@
 {application, elib,
-    [{vsn, "0.1.5"},
+    [{vsn, "0.1.6"},
         {description, "My Erlang common api for my convenience."},
         {registered, []},
         {applications, [kernel, eredis, uuid, stdlib, inets, jsx, zotonic_stdlib]},
