@@ -163,7 +163,7 @@ init({StopServerMethod, InfoServerName}) ->
         stop_server_method = StopServerMethod
     },
 
-    io:format("started~n"),
+    io:format("started~n~n"),
 
     case whereis(list_to_atom(AppNameStr ++ "_SUITE")) of
         undefined ->
